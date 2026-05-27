@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>共享书架 🌙&🐟</title>
+    <style>
+        /* --- 视觉风格与全局变量 (明亮浅色/实体书架主题) --- */
+        :root {
+            --bg-color: #f7f9fa;       
+            --panel-bg: #ffffff;       
+            --border-color: #e1e4e8;   
+            --text-main: #24292e;      
+            --text-muted: #586069;     
+            --accent-color: #a30000;   
+            --accent-hover: #cb2431;
+            --read-tag: #e6ffed;       
+            --read-text: #22863a;      
+            --want-tag: #f6f8fa;       
+            --want-text: #6a737d;      
+            --wood-shelf: #8b5a2b;     
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            padding: 2rem 1rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* --- 头部与控制区 --- */
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            border-bottom: 3px double var(--accent-color);
+            padding-bottom: 1.5rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            letter-spacing: 4px;
+            color: var(--accent-color);
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        .actions-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 2rem;
+        }
+
+        /* --- 通用按钮样式 --- */
+        .btn {
+            background-color: var(--panel-bg);
+            color: var(--text-main);
+            border: 1px solid #d1d5da;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            border-color: var(--text-muted);
+            background-color: #f6f8fa;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            border-color: var(--accent-hover);
+            color: #fff;
+        }
+
+        .btn-sm {
+            padding: 0.3rem 0.7rem;
+            font-size: 0.8rem;
+        }
+
+        /* --- 书架与作者卡片 --- */
+        .shelf-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+        }
+
+        .author-card {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-top: 4px solid var(--accent-color);
+            border-radius: 6px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        /* 实体木质书架隔板视觉效果 */
+        .author-card::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: -1px;
+            width: calc(100% + 2px);
+            height: 8px;
+            background: var(--wood-shelf);
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
+
+        .author-header {
+            font-size: 1.3rem;
+            margin-bottom: 1.2rem;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .author-years {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+
+        /* --- 图书列表 --- */
+        .book-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .book-item {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            background: #fafbfc;
+            padding: 1.2rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            gap: 1rem;
+        }
+
+        .book-info {
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .book-title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .book-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--text-main);
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 3px;
+            font-weight: bold;
+            border: 1px solid transparent;
+        }
+
+        .tag-read {
+            background-color: var(--read-tag);
+            color: var(--read-text);
+            border-color: #34d05880;
+        }
+
+        .tag-want {
+            background-color: var(--want-tag);
+            color: var(--want-text);
+            border-color: #e1e4e8;
+        }
+
+        /* 共享多批注样式框 */
+        .notes-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            margin-top: 0.4rem;
+        }
+
+        .book-notes {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            background: #fff;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            border: 1px dashed #e1e4e8;
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+        }
+
+        .notes-emoji {
+            font-size: 1rem;
+            user-select: none;
+        }
+        
+        .notes-text {
+            color: var(--text-main);
+        }
+
+        .notes-empty {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 0.85rem;
+        }
+
+        .book-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        /* --- 弹窗/模态框 --- */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(2px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--panel-bg);
+            border: 1px solid #d1d5da;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        .modal-header {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent-color);
+            font-weight: bold;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            background-color: #fff;
+            border: 1px solid #d1d5da;
+            color: var(--text-main);
+            padding: 0.6rem;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(163,0,0,0.1);
+        }
+
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>🌙&🐟</h1>
+            <p>不要再看推理小说了！</p>
+        </header>
+
+        <div class="actions-bar">
+            <button class="btn btn-primary" onclick="openAddModal()">+ 添加新书</button>
+        </div>
+
+        <div id="shelf" class="shelf-container">
+            <div class="loading">正在整理书架...</div>
+        </div>
+    </div>
+
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">档案录入：添加新书</div>
+            <form id="addBookForm" onsubmit="saveNewBook(event)">
+                <div class="form-group">
+                    <label>作者类型</label>
+                    <select id="authorType" class="form-control" onchange="toggleAuthorInput()">
+                        <option value="existing">选择已有作者</option>
+                        <option value="new">登记新作者</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="existingAuthorGroup">
+                    <label>选择作者</label>
+                    <select id="bookAuthorSelect" class="form-control"></select>
+                </div>
+
+                <div id="newAuthorGroup" style="display: none;">
+                    <div class="form-group">
+                        <label>作者姓名</label>
+                        <input type="text" id="newAuthorName" class="form-control" placeholder="如：阿加莎·克里斯蒂">
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>生年</label>
+                            <input type="text" id="newAuthorBirth" class="form-control" placeholder="1890">
+                        </div>
+                        <div class="form-group">
+                            <label>卒年 (若健在可不填)</label>
+                            <input type="text" id="newAuthorDeath" class="form-control" placeholder="1976">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>书名</label>
+                    <input type="text" id="bookTitle" class="form-control" required placeholder="如：罗杰疑案">
+                </div>
+                <div class="form-group">
+                    <label>阅读状态</label>
+                    <select id="bookStatus" class="form-control">
+                        <option value="想读">想读</option>
+                        <option value="已读">已读</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>🌙 的手记批注</label>
+                    <textarea id="bookNotesMoon" class="form-control" rows="2" placeholder="写下你的推理或评语..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>🐟 的手记批注</label>
+                    <textarea id="bookNotesFish" class="form-control" rows="2" placeholder="写下你的推理或评语..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" onclick="closeModal('addModal')">取消</button>
+                    <button type="submit" class="btn btn-primary">归档入库</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">修改共享批注</div>
+            <form id="editNotesForm" onsubmit="saveNotesEdit(event)">
+                <input type="hidden" id="editBookId">
+                <div class="form-group">
+                    <label id="editModalBookTitle" style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 1rem;"></label>
+                </div>
+                <div class="form-group">
+                    <label>🌙 的批注手记</label>
+                    <textarea id="editNotesMoonText" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>🐟 的批注手记</label>
+                    <textarea id="editNotesFishText" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" onclick="closeModal('editModal')">取消</button>
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================
+         * 1. 配置项与数据适配层 (Data Adapter)
+         * ========================================== */
+        const CONFIG = {
+            API_URL: 'https://sheetdb.io/api/v1/your-api-id', 
+            USE_LOCAL_MOCK: true // 连接网络数据库（如SheetDB）时改为 false
+        };
+
+        // 默认数据结构升级：改为包含 notesMoon 和 notesFish
+        const INITIAL_MOCK_DATA = [
+            { id: "1", authorName: "三津田信三", authorBirth: "1962", authorDeath: "至今", bookTitle: "首无·作祟之物", status: "已读", notesMoon: "叙述性诡计的巅峰之作，结局被震撼到了！", notesFish: "看到最后才明白前面所有的铺垫，太强了。" },
+            { id: "2", authorName: "笠井洁", authorBirth: "1948", authorDeath: "至今", bookTitle: "再见，天使", status: "已读", notesMoon: "法理与情理的交织，经典的暴风雪山庄。", notesFish: "" }
+        ];
+
+        const DataAdapter = {
+            async fetchAll() {
+                if (CONFIG.USE_LOCAL_MOCK) {
+                    let localData = localStorage.getItem('mystery_books_shared_v3');
+                    if (localData === null) {
+                        localStorage.setItem('mystery_books_shared_v3', JSON.stringify(INITIAL_MOCK_DATA));
+                        localData = JSON.stringify(INITIAL_MOCK_DATA);
+                    }
+                    return JSON.parse(localData);
+                } else {
+                    const response = await fetch(CONFIG.API_URL);
+                    return await response.json();
+                }
+            },
+
+            async create(record) {
+                if (CONFIG.USE_LOCAL_MOCK) {
+                    const data = await this.fetchAll();
+                    record.id = Date.now().toString(); 
+                    data.push(record);
+                    localStorage.setItem('mystery_books_shared_v3', JSON.stringify(data));
+                    return record;
+                } else {
+                    const response = await fetch(CONFIG.API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ data: [record] })
+                    });
+                    return await response.json();
+                }
+            },
+
+            async update(id, updatedFields) {
+                if (CONFIG.USE_LOCAL_MOCK) {
+                    const data = await this.fetchAll();
+                    const index = data.findIndex(item => item.id === id);
+                    if (index !== -1) {
+                        data[index] = { ...data[index], ...updatedFields };
+                        localStorage.setItem('mystery_books_shared_v3', JSON.stringify(data));
+                    }
+                    return data[index];
+                } else {
+                    const response = await fetch(`${CONFIG.API_URL}/id/${id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ data: updatedFields })
+                    });
+                    return await response.json();
+                }
+            }
+        };
+
+        /* ==========================================
+         * 2. 页面业务逻辑与渲染
+         * ========================================== */
+        let state = { books: [] };
+
+        document.addEventListener('DOMContentLoaded', refreshData);
+
+        async function refreshData() {
+            try {
+                showLoading(true);
+                state.books = await DataAdapter.fetchAll();
+                renderShelf();
+                populateAuthorSelect();
+            } catch (error) {
+                console.error("数据操作失败:", error);
+                document.getElementById('shelf').innerHTML = `<div class="loading" style="color:var(--accent-color)">数据加载失败，请检查网络。</div>`;
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function renderShelf() {
+            const shelfEl = document.getElementById('shelf');
+            shelfEl.innerHTML = '';
+
+            if (state.books.length === 0) {
+                shelfEl.innerHTML = '<div class="loading">书架空空如也，等待着新的谜题...</div>';
+                return;
+            }
+
+            const groups = {};
+            state.books.forEach(book => {
+                const authorKey = book.authorName;
+                if (!groups[authorKey]) {
+                    groups[authorKey] = {
+                        name: book.authorName,
+                        birth: book.authorBirth || '?',
+                        death: book.authorDeath || '',
+                        books: []
+                    };
+                }
+                groups[authorKey].books.push(book);
+            });
+
+            Object.values(groups).forEach(group => {
+                let yearsStr = '';
+                if (group.birth && group.death) {
+                    yearsStr = `(${group.birth}-${group.death})`;
+                } else if (group.birth) {
+                    yearsStr = `(${group.birth} ~ 至今)`;
+                }
+
+                const authorCard = document.createElement('div');
+                authorCard.className = 'author-card';
+
+                let booksHTML = '';
+                group.books.forEach(book => {
+                    const statusTagClass = book.status === '已读' ? 'tag-read' : 'tag-want';
+                    const nextStatus = book.status === '已读' ? '想读' : '已读';
+                    
+                    // 格式化处理双人批注，为空时提供优美的占位提示
+                    const moonNotesRender = book.notesMoon ? escapeHtml(book.notesMoon) : '<span class="notes-empty">期待手记录入...</span>';
+                    const fishNotesRender = book.notesFish ? escapeHtml(book.notesFish) : '<span class="notes-empty">期待手记录入...</span>';
+
+                    booksHTML += `
+                        <div class="book-item">
+                            <div class="book-info">
+                                <div class="book-title-row">
+                                    <span class="book-title">《${book.bookTitle}》</span>
+                                    <span class="tag ${statusTagClass}">${book.status}</span>
+                                </div>
+                                <div class="notes-container">
+                                    <div class="book-notes">
+                                        <span class="notes-emoji">🌙</span>
+                                        <span class="notes-text">${moonNotesRender}</span>
+                                    </div>
+                                    <div class="book-notes">
+                                        <span class="notes-emoji">🐟</span>
+                                        <span class="notes-text">${fishNotesRender}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="book-actions">
+                                <button class="btn btn-sm" onclick="toggleBookStatus('${book.id}', '${nextStatus}')">
+                                    标记为${nextStatus}
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="openEditModal('${book.id}', '${escapeJs(book.bookTitle)}', '${escapeJs(book.notesMoon || '')}', '${escapeJs(book.notesFish || '')}')">
+                                    勘误批注
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                authorCard.innerHTML = `
+                    <h3 class="author-header">
+                        <span>${group.name}</span>
+                        <span class="author-years">${yearsStr}</span>
+                    </h3>
+                    <div class="book-list">
+                        ${booksHTML}
+                    </div>
+                `;
+                shelfEl.appendChild(authorCard);
+            });
+        }
+
+        function populateAuthorSelect() {
+            const select = document.getElementById('bookAuthorSelect');
+            select.innerHTML = '';
+            
+            const authors = [];
+            const seen = new Set();
+            state.books.forEach(b => {
+                if (!seen.has(b.authorName)) {
+                    seen.add(b.authorName);
+                    authors.push({ name: b.authorName, birth: b.authorBirth, death: b.authorDeath });
+                }
+            });
+
+            authors.forEach(auth => {
+                const opt = document.createElement('option');
+                opt.value = auth.name;
+                opt.textContent = auth.name;
+                opt.dataset.birth = auth.birth || '';
+                opt.dataset.death = auth.death || '';
+                select.appendChild(opt);
+            });
+        }
+
+        /* ==========================================
+         * 3. 交互行为
+         * ========================================== */
+        async function toggleBookStatus(id, newStatus) {
+            try {
+                await DataAdapter.update(id, { status: newStatus });
+                await refreshData();
+            } catch (e) {
+                alert("变更状态失败。");
+            }
+        }
+
+        async function saveNotesEdit(event) {
+            event.preventDefault();
+            const id = document.getElementById('editBookId').value;
+            const notesMoon = document.getElementById('editNotesMoonText').value;
+            const notesFish = document.getElementById('editNotesFishText').value;
+
+            try {
+                closeModal('editModal');
+                await DataAdapter.update(id, { notesMoon, notesFish });
+                await refreshData();
+            } catch (e) {
+                alert("保存批注失败。");
+            }
+        }
+
+        async function saveNewBook(event) {
+            event.preventDefault();
+            
+            const authorType = document.getElementById('authorType').value;
+            let authorName, authorBirth, authorDeath;
+
+            if (authorType === 'existing') {
+                const select = document.getElementById('bookAuthorSelect');
+                if(!select.value) { alert('请先选择或创建一位作者。'); return; }
+                authorName = select.value;
+                const selectedOpt = select.options[select.selectedIndex];
+                authorBirth = selectedOpt.dataset.birth;
+                authorDeath = selectedOpt.dataset.death;
+            } else {
+                authorName = document.getElementById('newAuthorName').value.trim();
+                authorBirth = document.getElementById('newAuthorBirth').value.trim();
+                authorDeath = document.getElementById('newAuthorDeath').value.trim();
+                if (!authorName) { alert('请输入作者姓名。'); return; }
+            }
+
+            const newBook = {
+                authorName,
+                authorBirth,
+                authorDeath,
+                bookTitle: document.getElementById('bookTitle').value.trim(),
+                status: document.getElementById('bookStatus').value,
+                notesMoon: document.getElementById('bookNotesMoon').value.trim(),
+                notesFish: document.getElementById('bookNotesFish').value.trim()
+            };
+
+            try {
+                closeModal('addModal');
+                await DataAdapter.create(newBook);
+                document.getElementById('addBookForm').reset();
+                toggleAuthorInput(); 
+                await refreshData();
+            } catch (e) {
+                alert("新书录入失败。");
+            }
+        }
+
+        /* ==========================================
+         * 4. 辅助工具
+         * ========================================== */
+        function openAddModal() { document.getElementById('addModal').classList.add('active'); }
+        function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
+
+        function openEditModal(id, title, notesMoon, notesFish) {
+            document.getElementById('editBookId').value = id;
+            document.getElementById('editModalBookTitle').textContent = `《${title}》`;
+            document.getElementById('editNotesMoonText').value = notesMoon;
+            document.getElementById('editNotesFishText').value = notesFish;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function toggleAuthorInput() {
+            const type = document.getElementById('authorType').value;
+            document.getElementById('existingAuthorGroup').style.display = type === 'existing' ? 'block' : 'none';
+            document.getElementById('newAuthorGroup').style.display = type === 'new' ? 'block' : 'none';
+        }
+
+        function showLoading(show) {
+            const shelfEl = document.getElementById('shelf');
+            shelfEl.style.opacity = show ? '0.5' : '1';
+            shelfEl.style.pointerEvents = show ? 'none' : 'auto';
+        }
+
+        function escapeHtml(str) {
+            if(!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+        function escapeJs(str) {
+            if(!str) return '';
+            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+    </script>
+</body>
+</html>
