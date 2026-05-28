@@ -272,6 +272,7 @@
         .notes-text {
             color: var(--text-main);
             word-break: break-all;
+            white-space: pre-wrap; /* 允许手记换行展示 */
         }
 
         .notes-empty {
@@ -311,13 +312,13 @@
             background-color: rgba(0,0,0,0.5);
             backdrop-filter: blur(2px);
             justify-content: center;
-            align-items: flex-end; /* 手机端抽屉式弹出 */
+            align-items: flex-end; 
             z-index: 1000;
         }
 
         @media (min-width: 600px) {
             .modal {
-                align-items: center; /* 网页端居中弹出 */
+                align-items: center; 
             }
         }
 
@@ -370,7 +371,7 @@
             padding: 0.55rem;
             border-radius: 4px;
             font-size: 0.95rem;
-            -webkit-appearance: none; /* 移除iOS默认内阴影 */
+            -webkit-appearance: none; 
         }
 
         .form-control:focus {
@@ -387,7 +388,7 @@
 
         .modal-footer {
             display: flex;
-            flex-direction: column-reverse; /* 手机上取消键在下面，防止误触 */
+            flex-direction: column-reverse; 
             gap: 0.5rem;
             margin-top: 1.5rem;
         }
@@ -436,13 +437,13 @@
 
     <div id="addModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">档案录入：添加新书</div>
+            <div class="modal-header">档案录入</div>
             <form id="addBookForm" onsubmit="saveNewBook(event)">
                 <div class="form-group">
                     <label>作者类型</label>
                     <select id="authorType" class="form-control" onchange="toggleAuthorInput()">
                         <option value="existing">已有作者</option>
-                        <option value="new">新作者</option>
+                        <option value="new">新增作者</option>
                     </select>
                 </div>
                 
@@ -459,7 +460,7 @@
                     <div class="form-row-2">
                         <div class="form-group">
                             <label>生年</label>
-                            <input type="text" id="newAuthorBirth" class="form-control" placeholder="例：1958">
+                            <input type="text" id="newAuthorBirth" class="form-control" placeholder="">
                         </div>
                         <div class="form-group">
                             <label>卒年</label>
@@ -506,7 +507,7 @@
 
     <div id="editModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">勘误批注与作者生卒年</div>
+            <div class="modal-header">编辑</div>
             <form id="editNotesForm" onsubmit="saveNotesEdit(event)">
                 <input type="hidden" id="editBookId">
                 <input type="hidden" id="editAuthorNameHidden">
@@ -554,10 +555,10 @@
         const DataAdapter = {
             async fetchAll() {
                 if (CONFIG.USE_LOCAL_MOCK) {
-                    let localData = localStorage.getItem('mystery_books_shared_v4');
+                    let localData = localStorage.getItem('mystery_books_shared_v5');
                     if (localData === null) {
                         localData = JSON.stringify([]);
-                        localStorage.setItem('mystery_books_shared_v4', localData);
+                        localStorage.setItem('mystery_books_shared_v5', localData);
                     }
                     return JSON.parse(localData);
                 } else {
@@ -571,7 +572,7 @@
                     const data = await this.fetchAll();
                     record.id = Date.now().toString(); 
                     data.push(record);
-                    localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
+                    localStorage.setItem('mystery_books_shared_v5', JSON.stringify(data));
                     return record;
                 } else {
                     record.id = Date.now().toString(); 
@@ -587,10 +588,10 @@
             async update(id, updatedFields) {
                 if (CONFIG.USE_LOCAL_MOCK) {
                     const data = await this.fetchAll();
-                    const index = data.findIndex(item => item.id === id);
+                    const index = data.findIndex(item => item.id === String(id));
                     if (index !== -1) {
                         data[index] = { ...data[index], ...updatedFields };
-                        localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
+                        localStorage.setItem('mystery_books_shared_v5', JSON.stringify(data));
                     }
                     return data[index];
                 } else {
@@ -606,8 +607,8 @@
             async delete(id) {
                 if (CONFIG.USE_LOCAL_MOCK) {
                     let data = await this.fetchAll();
-                    data = data.filter(item => item.id !== id);
-                    localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
+                    data = data.filter(item => item.id !== String(id));
+                    localStorage.setItem('mystery_books_shared_v5', JSON.stringify(data));
                     return true;
                 } else {
                     const response = await fetch(`${CONFIG.API_URL}/id/${id}`, {
@@ -618,7 +619,6 @@
                 }
             },
 
-            // 批量更新同一作者的生卒年
             async updateAuthorYears(authorName, birth, death) {
                 const booksToUpdate = state.books.filter(b => b.authorName === authorName);
                 for (let book of booksToUpdate) {
@@ -684,7 +684,6 @@
 
                 let booksHTML = '';
                 group.books.forEach(book => {
-                    // 读取两人的独立状态，兼容老数据（如果老数据为空，则默认显示想读）
                     const statusMoon = book.statusMoon || '想读';
                     const statusFish = book.statusFish || '想读';
 
@@ -697,6 +696,7 @@
                     const moonNotesRender = book.notesMoon ? escapeHtml(book.notesMoon) : '<span class="notes-empty">期待手记录入...</span>';
                     const fishNotesRender = book.notesFish ? escapeHtml(book.notesFish) : '<span class="notes-empty">期待手记录入...</span>';
 
+                    // 关键改动：所有的 onclick 事件传参全部移除，只传 book.id 安全查找
                     booksHTML += `
                         <div class="book-item">
                             <div class="book-info">
@@ -725,7 +725,7 @@
                             <div class="book-actions">
                                 <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Moon', '${nextMoonStatus}')">🌙→${nextMoonStatus}</button>
                                 <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextFishStatus}')">🐟→${nextFishStatus}</button>
-                                <button class="btn btn-sm btn-primary" onclick="openEditModal('${book.id}', '${escapeJs(book.bookTitle)}', '${escapeJs(book.notesMoon || '')}', '${escapeJs(book.notesFish || '')}', '${escapeJs(group.name)}', '${escapeJs(group.birth)}', '${escapeJs(group.death)}')">
+                                <button class="btn btn-sm btn-primary" onclick="handleOpenEditModal('${book.id}')">
                                     勘误批注
                                 </button>
                             </div>
@@ -797,6 +797,21 @@
             }
         }
 
+        // 安全打开编辑框的方法：根据 ID 去数组中抓数据，彻底杜绝传参符号崩坏
+        function handleOpenEditModal(id) {
+            const book = state.books.find(b => String(b.id) === String(id));
+            if(!book) return;
+
+            document.getElementById('editBookId').value = book.id;
+            document.getElementById('editAuthorNameHidden').value = book.authorName;
+            document.getElementById('editModalBookTitle').textContent = `《${book.bookTitle}》`;
+            document.getElementById('editAuthorBirth').value = (book.authorBirth === '?' || !book.authorBirth) ? '' : book.authorBirth;
+            document.getElementById('editAuthorDeath').value = book.authorDeath || '';
+            document.getElementById('editNotesMoonText').value = book.notesMoon || '';
+            document.getElementById('editNotesFishText').value = book.notesFish || '';
+            document.getElementById('editModal').classList.add('active');
+        }
+
         async function saveNotesEdit(event) {
             event.preventDefault();
             const id = document.getElementById('editBookId').value;
@@ -809,9 +824,7 @@
             try {
                 closeModal('editModal');
                 showLoading(true);
-                // 1. 更新书本批注
                 await DataAdapter.update(id, { notesMoon, notesFish });
-                // 2. 同步更新该作者所有书的生卒年
                 await DataAdapter.updateAuthorYears(authorName, birth, death);
                 await refreshData();
             } catch (e) {
@@ -823,7 +836,6 @@
 
         async function saveNewBook(event) {
             event.preventDefault();
-            
             const authorType = document.getElementById('authorType').value;
             let authorName, authorBirth, authorDeath;
 
@@ -843,13 +855,13 @@
 
             const bookTitle = document.getElementById('bookTitle').value.trim();
 
-            // 【核心功能：查重机制】
             const isDuplicate = state.books.some(b => 
+                b.authorName && b.bookTitle &&
                 b.authorName.toLowerCase() === authorName.toLowerCase() && 
                 b.bookTitle.toLowerCase() === bookTitle.toLowerCase()
             );
             if (isDuplicate) {
-                alert(`档案查重提示：\n该作者旗下已存在《${bookTitle}》的记录，请勿重复录入！`);
+                alert(`档案查重提示：\n该作者旗下已存在《${bookTitle}》的记录，请勿重复录入`);
                 return;
             }
 
@@ -860,8 +872,8 @@
                 bookTitle,
                 statusMoon: document.getElementById('bookStatusMoon').value,
                 statusFish: document.getElementById('bookStatusFish').value,
-                notesMoon: document.getElementById('bookNotesMoon').value.trim(),
-                notesFish: document.getElementById('bookNotesFish').value.trim()
+                notesMoon: document.getElementById('bookNotesMoon').value,
+                notesFish: document.getElementById('bookNotesFish').value
             };
 
             try {
@@ -878,19 +890,18 @@
             }
         }
 
-        // 【核心功能：删除记录】
         async function deleteCurrentBook() {
             const id = document.getElementById('editBookId').value;
-            if (!id) return;
+            const title = document.getElementById('editModalBookTitle').textContent;
             
-            if (confirm("确定要彻底销毁这本图书的归档档案吗？此操作无法撤销。")) {
+            if (confirm(`你确定要彻底销毁 ${title} 的全部档案记录吗？此操作无法撤销。`)) {
                 try {
                     closeModal('editModal');
                     showLoading(true);
                     await DataAdapter.delete(id);
                     await refreshData();
-                } catch(e) {
-                    alert("销毁记录失败。");
+                } catch (e) {
+                    alert("档案销毁失败。");
                 } finally {
                     showLoading(false);
                 }
@@ -898,75 +909,35 @@
         }
 
         /* ==========================================
-         * 4. 辅助视图与弹窗全局控制函数
+         * 4. 辅助工具
          * ========================================== */
-        function openAddModal() {
-            document.getElementById('addBookForm').reset();
-            populateAuthorSelect();
-            toggleAuthorInput();
-            document.getElementById('addModal').style.display = 'flex';
+        function openAddModal() { 
+            document.getElementById('addModal').classList.add('active'); 
         }
-
-        function openEditModal(id, title, notesMoon, notesFish, authorName, birth, death) {
-            document.getElementById('editBookId').value = id;
-            document.getElementById('editAuthorNameHidden').value = authorName;
-            document.getElementById('editModalBookTitle').textContent = `《${title}》`;
-            document.getElementById('editAuthorBirth').value = birth;
-            document.getElementById('editAuthorDeath').value = death;
-            document.getElementById('editNotesMoonText').value = notesMoon;
-            document.getElementById('editNotesFishText').value = notesFish;
-            document.getElementById('editModal').style.display = 'flex';
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
+        function closeModal(modalId) { 
+            document.getElementById(modalId).classList.remove('active'); 
         }
 
         function toggleAuthorInput() {
             const type = document.getElementById('authorType').value;
-            if (type === 'existing') {
-                document.getElementById('existingAuthorGroup').style.display = 'block';
-                document.getElementById('newAuthorGroup').style.display = 'none';
-            } else {
-                document.getElementById('existingAuthorGroup').style.display = 'none';
-                document.getElementById('newAuthorGroup').style.display = 'block';
-            }
+            document.getElementById('existingAuthorGroup').style.display = type === 'existing' ? 'block' : 'none';
+            document.getElementById('newAuthorGroup').style.display = type === 'new' ? 'block' : 'none';
         }
 
         function showLoading(show) {
-            const shelf = document.getElementById('shelf');
-            if (show) {
-                // 如果当前已经在展示内容，就不暴力清空，提升丝滑感
-                if (shelf.innerHTML === '' || shelf.querySelector('.loading')) {
-                    shelf.innerHTML = '<div class="loading">正在更新数据，请稍候...</div>';
-                }
+            const shelfEl = document.getElementById('shelf');
+            if(show) {
+                shelfEl.style.opacity = '0.4';
+                shelfEl.style.pointerEvents = 'none';
+            } else {
+                shelfEl.style.opacity = '1';
+                shelfEl.style.pointerEvents = 'auto';
             }
         }
 
-        // 字符串安全转义函数
         function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/&/g, '&amp;')
-                      .replace(/</g, '&lt;')
-                      .replace(/>/g, '&gt;')
-                      .replace(/"/g, '&quot;')
-                      .replace(/'/g, '&#039;');
-        }
-
-        function escapeJs(str) {
-            if (!str) return '';
-            return str.replace(/\\/g, '\\\\')
-                      .replace(/'/g, "\\'")
-                      .replace(/"/g, '\\"')
-                      .replace(/\n/g, '\\n')
-                      .replace(/\r/g, '\\r');
-        }
-
-        // 点击模态框背景关闭
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = 'none';
-            }
+            if(!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
     </script>
 </body>
