@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=no">
     <title>共享书架 🌙&🐟</title>
     <style>
         /* --- 视觉风格与全局变量 (明亮浅色/实体书架主题) --- */
@@ -14,10 +14,12 @@
             --text-muted: #586069;     
             --accent-color: #a30000;   
             --accent-hover: #cb2431;
+            --danger-color: #cb2431;
+            --danger-hover: #b31d28;
             --read-tag: #e6ffed;       
             --read-text: #22863a;      
-            --want-tag: #f6f8fa;       
-            --want-text: #6a737d;      
+            --want-tag: #f1f8ff;       
+            --want-text: #0366d6;      
             --wood-shelf: #8b5a2b;     
         }
 
@@ -31,32 +33,33 @@
             background-color: var(--bg-color);
             color: var(--text-main);
             font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-            padding: 2rem 1rem;
-            line-height: 1.6;
+            padding: 1.5rem 1rem;
+            line-height: 1.5;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 900px;
             margin: 0 auto;
         }
 
         /* --- 头部与控制区 --- */
         header {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
             border-bottom: 3px double var(--accent-color);
-            padding-bottom: 1.5rem;
+            padding-bottom: 1.2rem;
         }
 
         header h1 {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             letter-spacing: 4px;
             color: var(--accent-color);
         }
 
         header p {
             color: var(--text-muted);
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             margin-top: 0.5rem;
             font-style: italic;
         }
@@ -64,11 +67,14 @@
         .actions-bar {
             display: flex;
             justify-content: flex-end;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         /* --- 通用按钮样式 --- */
         .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             background-color: var(--panel-bg);
             color: var(--text-main);
             border: 1px solid #d1d5da;
@@ -78,6 +84,7 @@
             transition: all 0.2s ease;
             font-size: 0.9rem;
             font-weight: 500;
+            min-height: 38px;
         }
 
         .btn:hover {
@@ -97,9 +104,19 @@
             color: #fff;
         }
 
+        .btn-danger {
+            color: var(--danger-color);
+            border-color: #d1d5da;
+        }
+        .btn-danger:hover {
+            background-color: #ffeef0;
+            border-color: var(--danger-color);
+        }
+
         .btn-sm {
-            padding: 0.3rem 0.7rem;
+            padding: 0.25rem 0.6rem;
             font-size: 0.8rem;
+            min-height: 30px;
         }
 
         /* --- 书架与作者卡片 --- */
@@ -114,12 +131,11 @@
             border: 1px solid var(--border-color);
             border-top: 4px solid var(--accent-color);
             border-radius: 6px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            padding: 1.2rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
             position: relative;
         }
 
-        /* 实体木质书架隔板视觉效果 */
         .author-card::after {
             content: '';
             position: absolute;
@@ -129,22 +145,22 @@
             height: 8px;
             background: var(--wood-shelf);
             border-radius: 0 0 4px 4px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.12);
         }
 
         .author-header {
-            font-size: 1.3rem;
-            margin-bottom: 1.2rem;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
             color: var(--text-main);
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 0.5rem;
             display: flex;
             align-items: center;
-            gap: 0.6rem;
+            justify-content: space-between;
         }
 
         .author-years {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-muted);
             font-weight: normal;
         }
@@ -153,18 +169,26 @@
         .book-list {
             display: flex;
             flex-direction: column;
-            gap: 1.2rem;
+            gap: 1rem;
         }
 
         .book-item {
             display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
+            flex-direction: column;
             background: #fafbfc;
-            padding: 1.2rem;
+            padding: 1rem;
             border-radius: 6px;
             border: 1px solid var(--border-color);
-            gap: 1rem;
+            gap: 0.8rem;
+        }
+
+        @media (min-width: 600px) {
+            .book-item {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 1.5rem;
+            }
         }
 
         .book-info {
@@ -175,34 +199,41 @@
         .book-title-row {
             display: flex;
             align-items: center;
-            gap: 0.8rem;
-            margin-bottom: 0.6rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
         }
 
         .book-title {
             font-weight: bold;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             color: var(--text-main);
         }
 
+        .tags-wrapper {
+            display: inline-flex;
+            gap: 0.3rem;
+        }
+
         .tag {
-            font-size: 0.75rem;
-            padding: 0.15rem 0.5rem;
+            font-size: 0.7rem;
+            padding: 0.1rem 0.4rem;
             border-radius: 3px;
             font-weight: bold;
             border: 1px solid transparent;
+            white-space: nowrap;
         }
 
         .tag-read {
             background-color: var(--read-tag);
             color: var(--read-text);
-            border-color: #34d05880;
+            border-color: #34d05840;
         }
 
         .tag-want {
             background-color: var(--want-tag);
             color: var(--want-text);
-            border-color: #e1e4e8;
+            border-color: #0366d630;
         }
 
         /* 共享多批注样式框 */
@@ -210,14 +241,13 @@
             display: flex;
             flex-direction: column;
             gap: 0.4rem;
-            margin-top: 0.4rem;
         }
 
         .book-notes {
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             color: var(--text-main);
             background: #fff;
-            padding: 0.4rem 0.8rem;
+            padding: 0.4rem 0.6rem;
             border-radius: 4px;
             border: 1px dashed #e1e4e8;
             display: flex;
@@ -225,13 +255,23 @@
             align-items: flex-start;
         }
 
+        .notes-profile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+
         .notes-emoji {
-            font-size: 1rem;
+            font-size: 0.95rem;
             user-select: none;
+            cursor: pointer;
         }
         
         .notes-text {
             color: var(--text-main);
+            word-break: break-all;
         }
 
         .notes-empty {
@@ -240,14 +280,27 @@
             font-size: 0.85rem;
         }
 
+        /* 操作按钮组在手机和电脑上的兼容排版 */
         .book-actions {
             display: flex;
-            gap: 0.5rem;
-            flex-shrink: 0;
-            margin-top: 2px;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            border-top: 1px solid #e1e4e860;
+            padding-top: 0.6rem;
         }
 
-        /* --- 弹窗/模态框 --- */
+        @media (min-width: 600px) {
+            .book-actions {
+                flex-direction: column;
+                align-items: flex-end;
+                border-top: none;
+                padding-top: 0;
+                margin-top: 2px;
+            }
+        }
+
+        /* --- 弹窗/模态框适配手机 --- */
         .modal {
             display: none;
             position: fixed;
@@ -258,27 +311,39 @@
             background-color: rgba(0,0,0,0.5);
             backdrop-filter: blur(2px);
             justify-content: center;
-            align-items: center;
+            align-items: flex-end; /* 手机端抽屉式弹出 */
             z-index: 1000;
         }
 
-        .modal.active {
-            display: flex;
+        @media (min-width: 600px) {
+            .modal {
+                align-items: center; /* 网页端居中弹出 */
+            }
         }
 
         .modal-content {
             background-color: var(--panel-bg);
-            border: 1px solid #d1d5da;
-            padding: 2rem;
-            border-radius: 8px;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            padding: 1.5rem;
             width: 100%;
-            max-width: 500px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+        }
+
+        @media (min-width: 600px) {
+            .modal-content {
+                border-radius: 8px;
+                max-width: 500px;
+                border: 1px solid #d1d5da;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            }
         }
 
         .modal-header {
-            font-size: 1.2rem;
-            margin-bottom: 1.5rem;
+            font-size: 1.15rem;
+            margin-bottom: 1.2rem;
             color: var(--accent-color);
             font-weight: bold;
             border-bottom: 1px solid var(--border-color);
@@ -286,14 +351,14 @@
         }
 
         .form-group {
-            margin-bottom: 1.2rem;
+            margin-bottom: 1rem;
         }
 
         .form-group label {
             display: block;
             font-size: 0.85rem;
             color: var(--text-muted);
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.3rem;
             font-weight: bold;
         }
 
@@ -302,9 +367,10 @@
             background-color: #fff;
             border: 1px solid #d1d5da;
             color: var(--text-main);
-            padding: 0.6rem;
+            padding: 0.55rem;
             border-radius: 4px;
             font-size: 0.95rem;
+            -webkit-appearance: none; /* 移除iOS默认内阴影 */
         }
 
         .form-control:focus {
@@ -321,9 +387,26 @@
 
         .modal-footer {
             display: flex;
-            justify-content: flex-end;
+            flex-direction: column-reverse; /* 手机上取消键在下面，防止误触 */
             gap: 0.5rem;
-            margin-top: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        @media (min-width: 600px) {
+            .modal-footer {
+                flex-direction: row;
+                justify-content: flex-end;
+            }
+        }
+
+        .modal-footer .btn {
+            width: 100%;
+        }
+
+        @media (min-width: 600px) {
+            .modal-footer .btn {
+                width: auto;
+            }
         }
 
         .loading {
@@ -371,30 +454,39 @@
                 <div id="newAuthorGroup" style="display: none;">
                     <div class="form-group">
                         <label>作者姓名</label>
-                        <input type="text" id="newAuthorName" class="form-control" placeholder="">
+                        <input type="text" id="newAuthorName" class="form-control">
                     </div>
                     <div class="form-row-2">
                         <div class="form-group">
                             <label>生年</label>
-                            <input type="text" id="newAuthorBirth" class="form-control" placeholder="">
+                            <input type="text" id="newAuthorBirth" class="form-control" placeholder="例：1958">
                         </div>
                         <div class="form-group">
                             <label>卒年</label>
-                            <input type="text" id="newAuthorDeath" class="form-control" placeholder="">
+                            <input type="text" id="newAuthorDeath" class="form-control" placeholder="健在请留空">
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label>书名</label>
-                    <input type="text" id="bookTitle" class="form-control" required placeholder="">
+                    <input type="text" id="bookTitle" class="form-control" required>
                 </div>
-                <div class="form-group">
-                    <label>阅读状态</label>
-                    <select id="bookStatus" class="form-control">
-                        <option value="想读">想读</option>
-                        <option value="已读">已读</option>
-                    </select>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label>🌙 阅读状态</label>
+                        <select id="bookStatusMoon" class="form-control">
+                            <option value="想读">想读</option>
+                            <option value="已读">已读</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🐟 阅读状态</label>
+                        <select id="bookStatusFish" class="form-control">
+                            <option value="想读">想读</option>
+                            <option value="已读">已读</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>🌙 的手记批注</label>
@@ -414,11 +506,22 @@
 
     <div id="editModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">修改共享批注</div>
+            <div class="modal-header">勘误批注与作者生卒年</div>
             <form id="editNotesForm" onsubmit="saveNotesEdit(event)">
                 <input type="hidden" id="editBookId">
+                <input type="hidden" id="editAuthorNameHidden">
                 <div class="form-group">
-                    <label id="editModalBookTitle" style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 1rem;"></label>
+                    <label id="editModalBookTitle" style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 0.5rem;"></label>
+                </div>
+                <div class="form-row-2" style="background: #f6f8fa; padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>作者生年修改</label>
+                        <input type="text" id="editAuthorBirth" class="form-control">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>作者卒年修改</label>
+                        <input type="text" id="editAuthorDeath" class="form-control" placeholder="健在请留空">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>🌙 的批注手记</label>
@@ -428,9 +531,12 @@
                     <label>🐟 的批注手记</label>
                     <textarea id="editNotesFishText" class="form-control" rows="3"></textarea>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn" onclick="closeModal('editModal')">取消</button>
-                    <button type="submit" class="btn btn-primary">保存修改</button>
+                <div class="modal-footer" style="justify-content: space-between; flex-direction: row; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-danger" onclick="deleteCurrentBook()">销毁此记录</button>
+                    <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: flex-end;" class="mobile-grid-fix">
+                        <button type="button" class="btn" onclick="closeModal('editModal')" style="width: auto;">取消</button>
+                        <button type="submit" class="btn btn-primary" style="width: auto;">保存修改</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -442,22 +548,16 @@
          * ========================================== */
         const CONFIG = {
             API_URL: 'https://sheetdb.io/api/v1/gmckvbct32rf5', 
-            USE_LOCAL_MOCK: false // 连接网络数据库（如SheetDB）时改为 false
+            USE_LOCAL_MOCK: false 
         };
-
-        // 默认数据结构升级：改为包含 notesMoon 和 notesFish
-        const INITIAL_MOCK_DATA = [
-            { id: "1", authorName: "三津田信三", authorBirth: "1962", authorDeath: "至今", bookTitle: "首无·作祟之物", status: "已读", notesMoon: "叙述性诡计的巅峰之作，结局被震撼到了！", notesFish: "看到最后才明白前面所有的铺垫，太强了。" },
-            { id: "2", authorName: "笠井洁", authorBirth: "1948", authorDeath: "至今", bookTitle: "再见，天使", status: "已读", notesMoon: "法理与情理的交织，经典的暴风雪山庄。", notesFish: "" }
-        ];
 
         const DataAdapter = {
             async fetchAll() {
                 if (CONFIG.USE_LOCAL_MOCK) {
-                    let localData = localStorage.getItem('mystery_books_shared_v3');
+                    let localData = localStorage.getItem('mystery_books_shared_v4');
                     if (localData === null) {
-                        localStorage.setItem('mystery_books_shared_v3', JSON.stringify(INITIAL_MOCK_DATA));
-                        localData = JSON.stringify(INITIAL_MOCK_DATA);
+                        localData = JSON.stringify([]);
+                        localStorage.setItem('mystery_books_shared_v4', localData);
                     }
                     return JSON.parse(localData);
                 } else {
@@ -471,9 +571,10 @@
                     const data = await this.fetchAll();
                     record.id = Date.now().toString(); 
                     data.push(record);
-                    localStorage.setItem('mystery_books_shared_v3', JSON.stringify(data));
+                    localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
                     return record;
                 } else {
+                    record.id = Date.now().toString(); 
                     const response = await fetch(CONFIG.API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -489,7 +590,7 @@
                     const index = data.findIndex(item => item.id === id);
                     if (index !== -1) {
                         data[index] = { ...data[index], ...updatedFields };
-                        localStorage.setItem('mystery_books_shared_v3', JSON.stringify(data));
+                        localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
                     }
                     return data[index];
                 } else {
@@ -499,6 +600,29 @@
                         body: JSON.stringify({ data: updatedFields })
                     });
                     return await response.json();
+                }
+            },
+
+            async delete(id) {
+                if (CONFIG.USE_LOCAL_MOCK) {
+                    let data = await this.fetchAll();
+                    data = data.filter(item => item.id !== id);
+                    localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
+                    return true;
+                } else {
+                    const response = await fetch(`${CONFIG.API_URL}/id/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    return await response.json();
+                }
+            },
+
+            // 批量更新同一作者的生卒年
+            async updateAuthorYears(authorName, birth, death) {
+                const booksToUpdate = state.books.filter(b => b.authorName === authorName);
+                for (let book of booksToUpdate) {
+                    await this.update(book.id, { authorBirth: birth, authorDeath: death });
                 }
             }
         };
@@ -518,7 +642,7 @@
                 populateAuthorSelect();
             } catch (error) {
                 console.error("数据操作失败:", error);
-                document.getElementById('shelf').innerHTML = `<div class="loading" style="color:var(--accent-color)">数据加载失败，请检查网络。</div>`;
+                document.getElementById('shelf').innerHTML = `<div class="loading" style="color:var(--accent-color)">数据加载失败，请刷新重试。</div>`;
             } finally {
                 showLoading(false);
             }
@@ -528,7 +652,7 @@
             const shelfEl = document.getElementById('shelf');
             shelfEl.innerHTML = '';
 
-            if (state.books.length === 0) {
+            if (!Array.isArray(state.books) || state.books.length === 0 || state.books[0].id === undefined) {
                 shelfEl.innerHTML = '<div class="loading">书架空空如也，等待着新的谜题...</div>';
                 return;
             }
@@ -539,7 +663,7 @@
                 if (!groups[authorKey]) {
                     groups[authorKey] = {
                         name: book.authorName,
-                        birth: book.authorBirth || '?',
+                        birth: book.authorBirth || '',
                         death: book.authorDeath || '',
                         books: []
                     };
@@ -560,10 +684,16 @@
 
                 let booksHTML = '';
                 group.books.forEach(book => {
-                    const statusTagClass = book.status === '已读' ? 'tag-read' : 'tag-want';
-                    const nextStatus = book.status === '已读' ? '想读' : '已读';
+                    // 读取两人的独立状态，兼容老数据（如果老数据为空，则默认显示想读）
+                    const statusMoon = book.statusMoon || '想读';
+                    const statusFish = book.statusFish || '想读';
+
+                    const tagMoonClass = statusMoon === '已读' ? 'tag-read' : 'tag-want';
+                    const tagFishClass = statusFish === '已读' ? 'tag-read' : 'tag-want';
+
+                    const nextMoonStatus = statusMoon === '已读' ? '想读' : '已读';
+                    const nextFishStatus = statusFish === '已读' ? '想读' : '已读';
                     
-                    // 格式化处理双人批注，为空时提供优美的占位提示
                     const moonNotesRender = book.notesMoon ? escapeHtml(book.notesMoon) : '<span class="notes-empty">期待手记录入...</span>';
                     const fishNotesRender = book.notesFish ? escapeHtml(book.notesFish) : '<span class="notes-empty">期待手记录入...</span>';
 
@@ -571,25 +701,31 @@
                         <div class="book-item">
                             <div class="book-info">
                                 <div class="book-title-row">
-                                    <span class="book-title">《${book.bookTitle}》</span>
-                                    <span class="tag ${statusTagClass}">${book.status}</span>
+                                    <span class="book-title">《${escapeHtml(book.bookTitle)}》</span>
+                                    <div class="tags-wrapper">
+                                        <span class="tag ${tagMoonClass}">🌙 ${statusMoon}</span>
+                                        <span class="tag ${tagFishClass}">🐟 ${statusFish}</span>
+                                    </div>
                                 </div>
                                 <div class="notes-container">
                                     <div class="book-notes">
-                                        <span class="notes-emoji">🌙</span>
+                                        <div class="notes-profile">
+                                            <span class="notes-emoji" onclick="fastToggleStatus('${book.id}', 'Moon', '${nextMoonStatus}')" title="点击快速切换状态">🌙</span>
+                                        </div>
                                         <span class="notes-text">${moonNotesRender}</span>
                                     </div>
                                     <div class="book-notes">
-                                        <span class="notes-emoji">🐟</span>
+                                        <div class="notes-profile">
+                                            <span class="notes-emoji" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextFishStatus}')" title="点击快速切换状态">🐟</span>
+                                        </div>
                                         <span class="notes-text">${fishNotesRender}</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="book-actions">
-                                <button class="btn btn-sm" onclick="toggleBookStatus('${book.id}', '${nextStatus}')">
-                                    标记为${nextStatus}
-                                </button>
-                                <button class="btn btn-sm btn-primary" onclick="openEditModal('${book.id}', '${escapeJs(book.bookTitle)}', '${escapeJs(book.notesMoon || '')}', '${escapeJs(book.notesFish || '')}')">
+                                <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Moon', '${nextMoonStatus}')">🌙→${nextMoonStatus}</button>
+                                <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextFishStatus}')">🐟→${nextFishStatus}</button>
+                                <button class="btn btn-sm btn-primary" onclick="openEditModal('${book.id}', '${escapeJs(book.bookTitle)}', '${escapeJs(book.notesMoon || '')}', '${escapeJs(book.notesFish || '')}', '${escapeJs(group.name)}', '${escapeJs(group.birth)}', '${escapeJs(group.death)}')">
                                     勘误批注
                                 </button>
                             </div>
@@ -599,7 +735,7 @@
 
                 authorCard.innerHTML = `
                     <h3 class="author-header">
-                        <span>${group.name}</span>
+                        <span>${escapeHtml(group.name)}</span>
                         <span class="author-years">${yearsStr}</span>
                     </h3>
                     <div class="book-list">
@@ -616,12 +752,24 @@
             
             const authors = [];
             const seen = new Set();
-            state.books.forEach(b => {
-                if (!seen.has(b.authorName)) {
-                    seen.add(b.authorName);
-                    authors.push({ name: b.authorName, birth: b.authorBirth, death: b.authorDeath });
-                }
-            });
+            if(Array.isArray(state.books)) {
+                state.books.forEach(b => {
+                    if (b.authorName && !seen.has(b.authorName)) {
+                        seen.add(b.authorName);
+                        authors.push({ name: b.authorName, birth: b.authorBirth, death: b.authorDeath });
+                    }
+                });
+            }
+
+            if(authors.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.textContent = "暂无已有作者，请选择新作者";
+                select.appendChild(opt);
+                document.getElementById('authorType').value = 'new';
+                toggleAuthorInput();
+                return;
+            }
 
             authors.forEach(auth => {
                 const opt = document.createElement('option');
@@ -636,27 +784,40 @@
         /* ==========================================
          * 3. 交互行为
          * ========================================== */
-        async function toggleBookStatus(id, newStatus) {
+        async function fastToggleStatus(id, person, nextStatus) {
             try {
-                await DataAdapter.update(id, { status: newStatus });
+                showLoading(true);
+                const updateField = person === 'Moon' ? { statusMoon: nextStatus } : { statusFish: nextStatus };
+                await DataAdapter.update(id, updateField);
                 await refreshData();
             } catch (e) {
                 alert("变更状态失败。");
+            } finally {
+                showLoading(false);
             }
         }
 
         async function saveNotesEdit(event) {
             event.preventDefault();
             const id = document.getElementById('editBookId').value;
+            const authorName = document.getElementById('editAuthorNameHidden').value;
+            const birth = document.getElementById('editAuthorBirth').value.trim();
+            const death = document.getElementById('editAuthorDeath').value.trim();
             const notesMoon = document.getElementById('editNotesMoonText').value;
             const notesFish = document.getElementById('editNotesFishText').value;
 
             try {
                 closeModal('editModal');
+                showLoading(true);
+                // 1. 更新书本批注
                 await DataAdapter.update(id, { notesMoon, notesFish });
+                // 2. 同步更新该作者所有书的生卒年
+                await DataAdapter.updateAuthorYears(authorName, birth, death);
                 await refreshData();
             } catch (e) {
-                alert("保存批注失败。");
+                alert("保存失败。");
+            } finally {
+                showLoading(false);
             }
         }
 
@@ -680,36 +841,78 @@
                 if (!authorName) { alert('请输入作者姓名。'); return; }
             }
 
+            const bookTitle = document.getElementById('bookTitle').value.trim();
+
+            // 【核心功能：查重机制】
+            const isDuplicate = state.books.some(b => 
+                b.authorName.toLowerCase() === authorName.toLowerCase() && 
+                b.bookTitle.toLowerCase() === bookTitle.toLowerCase()
+            );
+            if (isDuplicate) {
+                alert(`档案查重提示：\n该作者旗下已存在《${bookTitle}》的记录，请勿重复录入！`);
+                return;
+            }
+
             const newBook = {
                 authorName,
                 authorBirth,
                 authorDeath,
-                bookTitle: document.getElementById('bookTitle').value.trim(),
-                status: document.getElementById('bookStatus').value,
+                bookTitle,
+                statusMoon: document.getElementById('bookStatusMoon').value,
+                statusFish: document.getElementById('bookStatusFish').value,
                 notesMoon: document.getElementById('bookNotesMoon').value.trim(),
                 notesFish: document.getElementById('bookNotesFish').value.trim()
             };
 
             try {
                 closeModal('addModal');
+                showLoading(true);
                 await DataAdapter.create(newBook);
                 document.getElementById('addBookForm').reset();
                 toggleAuthorInput(); 
                 await refreshData();
             } catch (e) {
                 alert("新书录入失败。");
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 【核心功能：删除记录】
+        async function deleteCurrentBook() {
+            const id = document.getElementById('editBookId').value;
+            const title = document.getElementById('editModalBookTitle').textContent;
+            
+            if (confirm(`🚨 探长决断确认：\n你确定要彻底销毁 ${title} 的全部档案记录吗？此操作无法撤销。`)) {
+                try {
+                    closeModal('editModal');
+                    showLoading(true);
+                    await DataAdapter.delete(id);
+                    await refreshData();
+                } catch (e) {
+                    alert("档案销毁失败。");
+                } finally {
+                    showLoading(false);
+                }
             }
         }
 
         /* ==========================================
          * 4. 辅助工具
          * ========================================== */
-        function openAddModal() { document.getElementById('addModal').classList.add('active'); }
-        function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
+        function openAddModal() { 
+            document.getElementById('addModal').classList.add('active'); 
+        }
+        function closeModal(modalId) { 
+            document.getElementById(modalId).classList.remove('active'); 
+        }
 
-        function openEditModal(id, title, notesMoon, notesFish) {
+        function openEditModal(id, title, notesMoon, notesFish, authorName, birth, death) {
             document.getElementById('editBookId').value = id;
+            document.getElementById('editAuthorNameHidden').value = authorName;
             document.getElementById('editModalBookTitle').textContent = `《${title}》`;
+            document.getElementById('editAuthorBirth').value = birth === '?' ? '' : birth;
+            document.getElementById('editAuthorDeath').value = death;
             document.getElementById('editNotesMoonText').value = notesMoon;
             document.getElementById('editNotesFishText').value = notesFish;
             document.getElementById('editModal').classList.add('active');
@@ -723,8 +926,13 @@
 
         function showLoading(show) {
             const shelfEl = document.getElementById('shelf');
-            shelfEl.style.opacity = show ? '0.5' : '1';
-            shelfEl.style.pointerEvents = show ? 'none' : 'auto';
+            if(show) {
+                shelfEl.style.opacity = '0.4';
+                shelfEl.style.pointerEvents = 'none';
+            } else {
+                shelfEl.style.opacity = '1';
+                shelfEl.style.pointerEvents = 'auto';
+            }
         }
 
         function escapeHtml(str) {
