@@ -881,16 +881,16 @@
         // 【核心功能：删除记录】
         async function deleteCurrentBook() {
             const id = document.getElementById('editBookId').value;
-            const title = document.getElementById('editModalBookTitle').textContent;
+            if (!id) return;
             
-            if (confirm(`🚨 探长决断确认：\n你确定要彻底销毁 ${title} 的全部档案记录吗？此操作无法撤销。`)) {
+            if (confirm("确定要彻底销毁这本图书的归档档案吗？此操作无法撤销。")) {
                 try {
                     closeModal('editModal');
                     showLoading(true);
                     await DataAdapter.delete(id);
                     await refreshData();
-                } catch (e) {
-                    alert("档案销毁失败。");
+                } catch(e) {
+                    alert("销毁记录失败。");
                 } finally {
                     showLoading(false);
                 }
@@ -898,50 +898,75 @@
         }
 
         /* ==========================================
-         * 4. 辅助工具
+         * 4. 辅助视图与弹窗全局控制函数
          * ========================================== */
-        function openAddModal() { 
-            document.getElementById('addModal').classList.add('active'); 
-        }
-        function closeModal(modalId) { 
-            document.getElementById(modalId).classList.remove('active'); 
+        function openAddModal() {
+            document.getElementById('addBookForm').reset();
+            populateAuthorSelect();
+            toggleAuthorInput();
+            document.getElementById('addModal').style.display = 'flex';
         }
 
         function openEditModal(id, title, notesMoon, notesFish, authorName, birth, death) {
             document.getElementById('editBookId').value = id;
             document.getElementById('editAuthorNameHidden').value = authorName;
             document.getElementById('editModalBookTitle').textContent = `《${title}》`;
-            document.getElementById('editAuthorBirth').value = birth === '?' ? '' : birth;
+            document.getElementById('editAuthorBirth').value = birth;
             document.getElementById('editAuthorDeath').value = death;
             document.getElementById('editNotesMoonText').value = notesMoon;
             document.getElementById('editNotesFishText').value = notesFish;
-            document.getElementById('editModal').classList.add('active');
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
         }
 
         function toggleAuthorInput() {
             const type = document.getElementById('authorType').value;
-            document.getElementById('existingAuthorGroup').style.display = type === 'existing' ? 'block' : 'none';
-            document.getElementById('newAuthorGroup').style.display = type === 'new' ? 'block' : 'none';
-        }
-
-        function showLoading(show) {
-            const shelfEl = document.getElementById('shelf');
-            if(show) {
-                shelfEl.style.opacity = '0.4';
-                shelfEl.style.pointerEvents = 'none';
+            if (type === 'existing') {
+                document.getElementById('existingAuthorGroup').style.display = 'block';
+                document.getElementById('newAuthorGroup').style.display = 'none';
             } else {
-                shelfEl.style.opacity = '1';
-                shelfEl.style.pointerEvents = 'auto';
+                document.getElementById('existingAuthorGroup').style.display = 'none';
+                document.getElementById('newAuthorGroup').style.display = 'block';
             }
         }
 
-        function escapeHtml(str) {
-            if(!str) return '';
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        function showLoading(show) {
+            const shelf = document.getElementById('shelf');
+            if (show) {
+                // 如果当前已经在展示内容，就不暴力清空，提升丝滑感
+                if (shelf.innerHTML === '' || shelf.querySelector('.loading')) {
+                    shelf.innerHTML = '<div class="loading">正在更新数据，请稍候...</div>';
+                }
+            }
         }
+
+        // 字符串安全转义函数
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;')
+                      .replace(/"/g, '&quot;')
+                      .replace(/'/g, '&#039;');
+        }
+
         function escapeJs(str) {
-            if(!str) return '';
-            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+            if (!str) return '';
+            return str.replace(/\\/g, '\\\\')
+                      .replace(/'/g, "\\'")
+                      .replace(/"/g, '\\"')
+                      .replace(/\n/g, '\\n')
+                      .replace(/\r/g, '\\r');
+        }
+
+        // 点击模态框背景关闭
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
         }
     </script>
 </body>
