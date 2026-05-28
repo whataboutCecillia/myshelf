@@ -165,7 +165,6 @@
             font-weight: normal;
         }
 
-        /* 专门为排序按钮留出的容器空间 */
         .author-title-wrapper, .order-controls {
             display: flex;
             align-items: center;
@@ -243,7 +242,6 @@
             border-color: #0366d630;
         }
 
-        /* 共享多批注样式框 */
         .notes-container {
             display: flex;
             flex-direction: column;
@@ -287,7 +285,6 @@
             font-size: 0.85rem;
         }
 
-        /* 操作按钮组在手机和电脑上的兼容排版 */
         .book-actions {
             display: flex;
             gap: 0.4rem;
@@ -307,7 +304,7 @@
             }
         }
 
-        /* --- 弹窗/模态框适配手机 --- */
+        /* --- 弹窗/模态框 --- */
         .modal {
             display: none;
             position: fixed;
@@ -318,13 +315,12 @@
             background-color: rgba(0,0,0,0.5);
             backdrop-filter: blur(2px);
             justify-content: center;
-            align-items: flex-end; /* 手机端抽屉式弹出 */
-            z-index: 1000;
+            align-items: flex-end;
         }
 
         @media (min-width: 600px) {
             .modal {
-                align-items: center; /* 网页端居中弹出 */
+                align-items: center;
             }
         }
 
@@ -350,7 +346,6 @@
 
         .modal-header {
             font-size: 1.15rem;
-            margin-bottom: 12rem;
             margin-bottom: 1.2rem;
             color: var(--accent-color);
             font-weight: bold;
@@ -378,7 +373,7 @@
             padding: 0.55rem;
             border-radius: 4px;
             font-size: 0.95rem;
-            -webkit-appearance: none; /* 移除iOS默认内阴影 */
+            -webkit-appearance: none;
         }
 
         .form-control:focus {
@@ -395,7 +390,7 @@
 
         .modal-footer {
             display: flex;
-            flex-direction: column-reverse; /* 手机上取消键在下面，防止误触 */
+            flex-direction: column-reverse;
             gap: 0.5rem;
             margin-top: 1.5rem;
         }
@@ -456,7 +451,7 @@
                 
                 <div class="form-group" id="existingAuthorGroup">
                     <label>选择或输入选择已有作者（支持输入自动联想）</label>
-                    <input type="text" id="bookAuthorSelect" class="form-control" list="authorDatalist" oninput="handleAuthorSelectInput()" placeholder="输入名字自动过滤联想...">
+                    <input type="text" id="bookAuthorSelect" class="form-control" list="authorDatalist" placeholder="输入名字自动过滤联想...">
                     <datalist id="authorDatalist"></datalist>
                 </div>
 
@@ -579,7 +574,6 @@
                 if (CONFIG.USE_LOCAL_MOCK) {
                     const data = await this.fetchAll();
                     record.id = Date.now().toString(); 
-                    // 新书入库时初始化排序权重（取最大值+1，放在最后）
                     const maxOrder = data.reduce((max, b) => Math.max(max, parseInt(b.sortOrder || 0)), 0);
                     record.sortOrder = (maxOrder + 1).toString();
 
@@ -635,7 +629,6 @@
                 }
             },
 
-            // 批量更新同一作者的生卒年
             async updateAuthorYears(authorName, birth, death) {
                 const booksToUpdate = state.books.filter(b => b.authorName === authorName);
                 for (let book of booksToUpdate) {
@@ -648,7 +641,6 @@
          * 2. 页面业务逻辑与渲染
          * ========================================== */
         let state = { books: [] };
-        // 本地临时存储作者的附加信息，用于数据关联和联想记忆
         let globalAuthorMap = {}; 
 
         document.addEventListener('DOMContentLoaded', refreshData);
@@ -656,7 +648,30 @@
         async function refreshData() {
             try {
                 showLoading(true);
-                state.books = await DataAdapter.fetchAll();
+                const rawBooks = await DataAdapter.fetchAll();
+                
+                if (Array.isArray(rawBooks)) {
+                    // 【核心排序与无列兼容逻辑】
+                    // 第一步：先对原始数据按照 “作者生年” 升序排列（没有写生年的排到最后）。
+                    // 生年相同时，保留原本在表格里的物理顺序。
+                    const baseSorted = [...rawBooks].sort((a, b) => {
+                        const birthA = parseInt(a.authorBirth) || 9999;
+                        const birthB = parseInt(b.authorBirth) || 9999;
+                        return birthA - birthB;
+                    });
+
+                    // 第二步：如果数据里的 sortOrder 还没有设置或被重置（即不存在该列），
+                    // 就直接将上一步“按生年排好”的序号作为临时数字赋予它，这样免去用户自行建列和维护。
+                    state.books = baseSorted.map((book, idx) => {
+                        if (!book.sortOrder || book.sortOrder === "" || book.sortOrder === "0") {
+                            book.sortOrder = (idx + 1).toString();
+                        }
+                        return book;
+                    });
+                } else {
+                    state.books = [];
+                }
+
                 renderShelf();
                 populateAuthorSelect();
             } catch (error) {
@@ -676,17 +691,12 @@
                 return;
             }
 
-            // 数据预处理：优先根据自定义 sortOrder 权重排序（如果没有则按ID兜底）
+            // 完全遵循 sortOrder 赋予的权重排序，如果是首用，默认已被生年规则铺底。
             const sortedBooks = [...state.books].sort((a, b) => {
-                const orderA = parseInt(a.sortOrder || 0);
-                const orderB = parseInt(b.sortOrder || 0);
-                return orderA !== orderB ? orderA - orderB : a.id.localeCompare(b.id);
+                return parseInt(a.sortOrder) - parseInt(b.sortOrder);
             });
 
-            // 依据作者聚合图书，同时保留其出现的先后次序
             const groups = {};
-            const authorOrderList = [];
-
             sortedBooks.forEach(book => {
                 const authorKey = book.authorName;
                 if (!groups[authorKey]) {
@@ -695,17 +705,14 @@
                         birth: book.authorBirth || '',
                         death: book.authorDeath || '',
                         books: [],
-                        // 记录该作者所有书里的最小次序，作为作者整体之间的排序参考
-                        minSortOrder: parseInt(book.sortOrder || 0) 
+                        minSortOrder: parseInt(book.sortOrder) 
                     };
-                    authorOrderList.push(authorKey);
                 } else {
-                    groups[authorKey].minSortOrder = Math.min(groups[authorKey].minSortOrder, parseInt(book.sortOrder || 0));
+                    groups[authorKey].minSortOrder = Math.min(groups[authorKey].minSortOrder, parseInt(book.sortOrder));
                 }
                 groups[authorKey].books.push(book);
             });
 
-            // 将作者组按照其组内图书的最小 sortOrder 进行排序
             const sortedGroupArray = Object.values(groups).sort((a, b) => a.minSortOrder - b.minSortOrder);
 
             sortedGroupArray.forEach((group, groupIdx) => {
@@ -804,7 +811,6 @@
                     if (b.authorName && !seen.has(b.authorName)) {
                         seen.add(b.authorName);
                         authors.push({ name: b.authorName, birth: b.authorBirth, death: b.authorDeath });
-                        // 建立本地映射字典方便联想选择时取生卒年
                         globalAuthorMap[b.authorName] = { birth: b.authorBirth || '', death: b.authorDeath || '' };
                     }
                 });
@@ -820,30 +826,16 @@
             authors.forEach(auth => {
                 const opt = document.createElement('option');
                 opt.value = auth.name;
-                // 利用 label 辅助用户查看已有信息
                 opt.label = auth.birth ? `生年: ${auth.birth}` : '健在/未知';
                 datalist.appendChild(opt);
             });
         }
 
-        // 当用户在联想输入框中输入内容时触发检查，如果完全匹配已存在的作者，可以记录或响应
-        function handleAuthorSelectInput() {
-            // 保留此空钩子以支持未来扩展，不干扰现有逻辑
-        }
-
         /* ==========================================
          * 3. 交互行为 与 增设的排序控制核心
          * ========================================== */
-        
-        // 核心排序函数：单本图书上下移动
         async function moveBook(bookId, direction) {
-            // 获取全量扁平化并排序过后的图书副本
-            const sortedBooks = [...state.books].sort((a, b) => {
-                const orderA = parseInt(a.sortOrder || 0);
-                const orderB = parseInt(b.sortOrder || 0);
-                return orderA !== orderB ? orderA - orderB : a.id.localeCompare(b.id);
-            });
-
+            const sortedBooks = [...state.books].sort((a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder));
             const index = sortedBooks.findIndex(b => b.id === bookId);
             if (index === -1) return;
 
@@ -853,13 +845,11 @@
             const currentBook = sortedBooks[index];
             const targetBook = sortedBooks[targetIndex];
 
-            // 互换两个记录在云端的 sortOrder 权重值
-            const currentOrder = currentBook.sortOrder || "0";
-            const targetOrder = targetBook.sortOrder || "0";
+            const currentOrder = currentBook.sortOrder;
+            const targetOrder = targetBook.sortOrder;
 
             try {
                 showLoading(true);
-                // 执行并行异步更新，将两个权重值置换
                 await Promise.all([
                     DataAdapter.update(currentBook.id, { sortOrder: targetOrder }),
                     DataAdapter.update(targetBook.id, { sortOrder: currentOrder })
@@ -872,16 +862,9 @@
             }
         }
 
-        // 核心排序函数：作者卡片整体批量上下移动
         async function moveAuthor(authorName, direction) {
-            // 首先对图书按当前位置展开分类排序
-            const sortedBooks = [...state.books].sort((a, b) => {
-                const orderA = parseInt(a.sortOrder || 0);
-                const orderB = parseInt(b.sortOrder || 0);
-                return orderA !== orderB ? orderA - orderB : a.id.localeCompare(b.id);
-            });
+            const sortedBooks = [...state.books].sort((a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder));
 
-            // 抓取出所有出场作者的先后独立顺序
             const authorsOrder = [];
             sortedBooks.forEach(b => {
                 if (!authorsOrder.includes(b.authorName)) {
@@ -897,20 +880,17 @@
 
             const targetAuthorName = authorsOrder[targetIndex];
 
-            // 筛出两个作者各自名下的所有书籍
             const currentAuthorBooks = sortedBooks.filter(b => b.authorName === authorName);
             const targetAuthorBooks = sortedBooks.filter(b => b.authorName === targetAuthorName);
 
-            // 收集两个作者涉及的所有旧 sortOrder 权重总池子
             const allOrders = [...currentAuthorBooks, ...targetAuthorBooks]
-                              .map(b => parseInt(b.sortOrder || 0))
+                              .map(b => parseInt(b.sortOrder))
                               .sort((a, b) => a - b);
 
             try {
                 showLoading(true);
                 const updatePromises = [];
                 
-                // 将排序权重池重新按期望分配给两个组合：上移则当前作者分前半段，下移则分后半段
                 if (direction === 'up') {
                     currentAuthorBooks.forEach((b, i) => {
                         updatePromises.push(DataAdapter.update(b.id, { sortOrder: allOrders[i].toString() }));
@@ -982,7 +962,6 @@
                 if(!inputVal) { alert('请先选择或输入一位已有作者。'); return; }
                 authorName = inputVal;
                 
-                // 如果输入的已有作者在前端字典中存在，自动继承其生卒年数据
                 if (globalAuthorMap[authorName]) {
                     authorBirth = globalAuthorMap[authorName].birth;
                     authorDeath = globalAuthorMap[authorName].death;
