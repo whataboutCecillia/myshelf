@@ -180,7 +180,7 @@
 
     <div id="addModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">档案录入</div>
+            <div class="modal-header">档案录入：添加新书</div>
             <form id="addBookForm" onsubmit="saveNewBook(event)">
                 <div class="form-group">
                     <label>作者类型</label>
@@ -192,7 +192,7 @@
                 
                 <div class="form-group" id="existingAuthorGroup">
                     <label>选择或输入已有作者</label>
-                    <input type="text" id="bookAuthorSelect" class="form-control" list="authorDatalist" placeholder="">
+                    <input type="text" id="bookAuthorSelect" class="form-control" list="authorDatalist" placeholder="输入名字自动过滤联想...">
                     <datalist id="authorDatalist"></datalist>
                 </div>
 
@@ -289,7 +289,7 @@
 
     <script>
         /* ==========================================
-         * 1. 配置项与云端数据对接层 (完全依赖后端 sortOrder)
+         * 1. 配置项与云端数据对接层
          * ========================================== */
         const CONFIG = {
             API_URL: 'https://sheetdb.io/api/v1/gmckvbct32rf5', 
@@ -309,7 +309,6 @@
             },
 
             async create(record) {
-                // 自动计算最大的权重，确保新加的书在最下面
                 const data = await this.fetchAll();
                 const cleanData = Array.isArray(data) ? data.filter(b => b && b.authorName) : [];
                 const maxOrder = cleanData.reduce((max, b) => Math.max(max, parseInt(b.sortOrder) || 0), 0);
@@ -386,11 +385,8 @@
                 const rawBooks = await DataAdapter.fetchAll();
                 
                 if (Array.isArray(rawBooks)) {
-                    // 数据清洗：只保留有书名和作者名的数据行
                     const cleanBooks = rawBooks.filter(book => book && book.bookTitle && book.authorName);
                     
-                    // 【正统物理排序】：完全遵循后端的 sortOrder 字段排序
-                    // 如果老数据未填 sortOrder，默认根据其在数组里的自然索引赋予兜底值，不卡死
                     state.books = cleanBooks.map((book, idx) => {
                         if (!book.sortOrder || book.sortOrder === "" || book.sortOrder === "0") {
                             book.sortOrder = (idx + 1).toString();
@@ -421,10 +417,10 @@
                 return;
             }
 
-            // 完全遵循从后端读出的权重链路进行渲染
+            // 完全遵循从后端读出的权重链路进行排队
             const sortedBooks = [...state.books].sort((a, b) => (parseInt(a.sortOrder) || 0) - (parseInt(b.sortOrder) || 0));
 
-            // 按作者归类，并记录该作者旗下所有书的最小 sortOrder，用于决定作者卡片之间的宏观顺序
+            // 按作者归类
             const groups = {};
             sortedBooks.forEach(book => {
                 const authorKey = book.authorName;
@@ -442,13 +438,17 @@
                 groups[authorKey].books.push(book);
             });
 
-            // 作者卡片大排队：由组内最靠前的那本书的 sortOrder 决定
+            // 作者大排队由组内最靠前的那本书的最小 sortOrder 决定
             const sortedGroupArray = Object.values(groups).sort((a, b) => a.minSortOrder - b.minSortOrder);
 
             sortedGroupArray.forEach((group, groupIdx) => {
+                // 【规范化链接符号为：— 破折号】
                 let yearsStr = '';
-                if (group.birth && group.death) { yearsStr = `(${group.birth}-${group.death})`; } 
-                else if (group.birth) { yearsStr = `(${group.birth} ~ 至今)`; }
+                if (group.birth && group.death) { 
+                    yearsStr = `(${group.birth}—${group.death})`; 
+                } else if (group.birth) { 
+                    yearsStr = `(${group.birth}—)`; 
+                }
 
                 const authorCard = document.createElement('div');
                 authorCard.className = 'author-card';
@@ -494,7 +494,7 @@
                                 <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Moon', '${nextMoonStatus}')">🌙→${nextMoonStatus}</button>
                                 <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextFishStatus}')">🐟→${nextFishStatus}</button>
                                 <button class="btn btn-sm btn-primary" onclick="openEditModal('${book.id}', '${escapeJs(book.bookTitle)}', '${escapeJs(book.notesMoon || '')}', '${escapeJs(book.notesFish || '')}', '${escapeJs(group.name)}', '${escapeJs(group.birth)}', '${escapeJs(group.death)}')">
-                                    编辑
+                                    勘误批注
                                 </button>
                             </div>
                         </div>
@@ -521,9 +521,10 @@
         }
 
         /* ==========================================
-         * 3. 真正操作后端 sortOrder 的移动功能
+         * 3. 真正操作后端 sortOrder 的移动机制
          * ========================================== */
         async function moveBook(bookId, direction) {
+            // 获取全量按目前权重绝对排序的书籍名录
             const sortedBooks = [...state.books].sort((a, b) => (parseInt(a.sortOrder) || 0) - (parseInt(b.sortOrder) || 0));
             const index = sortedBooks.findIndex(b => b.id === bookId);
             if (index === -1) return;
@@ -534,20 +535,26 @@
             const currentBook = sortedBooks[index];
             const targetBook = sortedBooks[targetIndex];
 
-            // 完美的云端对调权重机制
+            // 精准抓取需要对调的两个坑位
             const currentOrder = currentBook.sortOrder;
             const targetOrder = targetBook.sortOrder;
 
             try {
                 showLoading(true);
-                // 真正推送到后端的改动，完全不碰生卒年数字！
+                // 1. 推送后台对调
                 await Promise.all([
                     DataAdapter.update(currentBook.id, { sortOrder: targetOrder }),
                     DataAdapter.update(targetBook.id, { sortOrder: currentOrder })
                 ]);
+                
+                // 2.【核心修正】：在本地内存状态也强行同步对调，杜绝内部因分组导致的刷新死角
+                currentBook.sortOrder = targetOrder;
+                targetBook.sortOrder = currentOrder;
+
+                // 3. 全量刷新渲染
                 await refreshData();
             } catch (e) {
-                alert("调整顺序失败，请确认表格中是否创建了有效的 sortOrder 列。");
+                alert("调整顺序失败，请确认网络畅通。");
             } finally {
                 showLoading(false);
             }
@@ -570,7 +577,6 @@
             const currentAuthorBooks = sortedBooks.filter(b => b.authorName === authorName);
             const targetAuthorBooks = sortedBooks.filter(b => b.authorName === targetAuthorName);
 
-            // 收集两个集合所有的旧 sortOrder 坑位分布
             const allOrders = [...currentAuthorBooks, ...targetAuthorBooks]
                               .map(b => parseInt(b.sortOrder) || 0)
                               .sort((a, b) => a - b);
