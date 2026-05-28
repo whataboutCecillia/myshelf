@@ -186,7 +186,7 @@
                     <label>作者类型</label>
                     <select id="authorType" class="form-control" onchange="toggleAuthorInput()">
                         <option value="existing">已有作者</option>
-                        <option value="new">新增作者</option>
+                        <option value="new">新作者</option>
                     </select>
                 </div>
                 
@@ -251,7 +251,7 @@
 
     <div id="editModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">编辑</div>
+            <div class="modal-header">勘误批注与作者生卒年</div>
             <form id="editNotesForm" onsubmit="saveNotesEdit(event)">
                 <input type="hidden" id="editBookId">
                 <input type="hidden" id="editAuthorNameHidden">
@@ -417,10 +417,10 @@
                 return;
             }
 
-            // 完全遵循从后端读出的权重链路进行排队
+            // 按目前全量权重进行绝对排序
             const sortedBooks = [...state.books].sort((a, b) => (parseInt(a.sortOrder) || 0) - (parseInt(b.sortOrder) || 0));
 
-            // 按作者归类
+            // 按作者归类分箱
             const groups = {};
             sortedBooks.forEach(book => {
                 const authorKey = book.authorName;
@@ -438,11 +438,11 @@
                 groups[authorKey].books.push(book);
             });
 
-            // 作者大排队由组内最靠前的那本书的最小 sortOrder 决定
+            // 作者卡片之间的宏观顺序：取决于各个组内第一本书的最小 sortOrder
             const sortedGroupArray = Object.values(groups).sort((a, b) => a.minSortOrder - b.minSortOrder);
 
             sortedGroupArray.forEach((group, groupIdx) => {
-                // 【规范化链接符号为：— 破折号】
+                // 规范生卒年链接符为 “—”（破折号）
                 let yearsStr = '';
                 if (group.birth && group.death) { 
                     yearsStr = `(${group.birth}—${group.death})`; 
@@ -481,15 +481,15 @@
                                         <span class="notes-text">${moonNotesRender}</span>
                                     </div>
                                     <div class="book-notes">
-                                        <div class="notes-profile"><span class="notes-emoji" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextFishStatus}')">🐟</span></div>
+                                        <div class="notes-profile"><span class="notes-emoji" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextShotFish = nextFishStatus}')">🐟</span></div>
                                         <span class="notes-text">${fishNotesRender}</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="book-actions">
                                 <div class="order-controls" style="margin-bottom: 0.2rem;">
-                                    <button class="btn btn-sm" onclick="moveBook('${book.id}', 'up')" title="书籍上移" ${bookIdx === 0 && groupIdx === 0 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>↑</button>
-                                    <button class="btn btn-sm" onclick="moveBook('${book.id}', 'down')" title="书籍下移" ${bookIdx === group.books.length - 1 && groupIdx === sortedGroupArray.length - 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>↓</button>
+                                    <button class="btn btn-sm" onclick="moveBook('${book.id}', '${escapeJs(group.name)}', 'up')" title="内部上移书籍" ${bookIdx === 0 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>↑</button>
+                                    <button class="btn btn-sm" onclick="moveBook('${book.id}', '${escapeJs(group.name)}', 'down')" title="内部下移书籍" ${bookIdx === group.books.length - 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>↓</button>
                                 </div>
                                 <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Moon', '${nextMoonStatus}')">🌙→${nextMoonStatus}</button>
                                 <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextFishStatus}')">🐟→${nextFishStatus}</button>
@@ -521,40 +521,45 @@
         }
 
         /* ==========================================
-         * 3. 真正操作后端 sortOrder 的移动机制
+         * 3. 真正操作后端 sortOrder 的移动核心机制
          * ========================================== */
-        async function moveBook(bookId, direction) {
-            // 获取全量按目前权重绝对排序的书籍名录
-            const sortedBooks = [...state.books].sort((a, b) => (parseInt(a.sortOrder) || 0) - (parseInt(b.sortOrder) || 0));
-            const index = sortedBooks.findIndex(b => b.id === bookId);
+        
+        // 【彻底修复】：精准限定在同一个作者内部进行书籍排序对调
+        async function moveBook(bookId, authorName, direction) {
+            // 1. 先过滤出当前作者旗下的所有书，并严格按照目前的 sortOrder 从小到大排序
+            const authorBooks = state.books
+                .filter(b => b.authorName === authorName)
+                .sort((a, b) => (parseInt(a.sortOrder) || 0) - (parseInt(b.sortOrder) || 0));
+            
+            const index = authorBooks.findIndex(b => b.id === bookId);
             if (index === -1) return;
 
+            // 2. 算好在组内要和谁对调
             let targetIndex = direction === 'up' ? index - 1 : index + 1;
-            if (targetIndex < 0 || targetIndex >= sortedBooks.length) return;
+            if (targetIndex < 0 || targetIndex >= authorBooks.length) return; // 到头了，直接驳回
 
-            const currentBook = sortedBooks[index];
-            const targetBook = sortedBooks[targetIndex];
+            const currentBook = authorBooks[index];
+            const targetBook = authorBooks[targetIndex];
 
-            // 精准抓取需要对调的两个坑位
+            // 3. 提取两个坑位的旧权重
             const currentOrder = currentBook.sortOrder;
             const targetOrder = targetBook.sortOrder;
 
             try {
                 showLoading(true);
-                // 1. 推送后台对调
+                // 4. 同步更新云端 SheetDB 数据库中的 sortOrder 字段
                 await Promise.all([
                     DataAdapter.update(currentBook.id, { sortOrder: targetOrder }),
                     DataAdapter.update(targetBook.id, { sortOrder: currentOrder })
                 ]);
                 
-                // 2.【核心修正】：在本地内存状态也强行同步对调，杜绝内部因分组导致的刷新死角
+                // 5. 顺手刷新本地状态，确保渲染完美刷新
                 currentBook.sortOrder = targetOrder;
                 targetBook.sortOrder = currentOrder;
 
-                // 3. 全量刷新渲染
                 await refreshData();
             } catch (e) {
-                alert("调整顺序失败，请确认网络畅通。");
+                alert("调整书籍顺序失败，请检查网络。");
             } finally {
                 showLoading(false);
             }
