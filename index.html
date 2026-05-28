@@ -272,6 +272,7 @@
         .notes-text {
             color: var(--text-main);
             word-break: break-all;
+            white-space: pre-wrap; /* 允许手记换行展示 */
         }
 
         .notes-empty {
@@ -311,13 +312,13 @@
             background-color: rgba(0,0,0,0.5);
             backdrop-filter: blur(2px);
             justify-content: center;
-            align-items: flex-end; /* 手机端抽屉式弹出 */
+            align-items: flex-end; 
             z-index: 1000;
         }
 
         @media (min-width: 600px) {
             .modal {
-                align-items: center; /* 网页端居中弹出 */
+                align-items: center; 
             }
         }
 
@@ -370,7 +371,7 @@
             padding: 0.55rem;
             border-radius: 4px;
             font-size: 0.95rem;
-            -webkit-appearance: none; /* 移除iOS默认内阴影 */
+            -webkit-appearance: none; 
         }
 
         .form-control:focus {
@@ -387,7 +388,7 @@
 
         .modal-footer {
             display: flex;
-            flex-direction: column-reverse; /* 手机上取消键在下面，防止误触 */
+            flex-direction: column-reverse; 
             gap: 0.5rem;
             margin-top: 1.5rem;
         }
@@ -554,10 +555,10 @@
         const DataAdapter = {
             async fetchAll() {
                 if (CONFIG.USE_LOCAL_MOCK) {
-                    let localData = localStorage.getItem('mystery_books_shared_v4');
+                    let localData = localStorage.getItem('mystery_books_shared_v5');
                     if (localData === null) {
                         localData = JSON.stringify([]);
-                        localStorage.setItem('mystery_books_shared_v4', localData);
+                        localStorage.setItem('mystery_books_shared_v5', localData);
                     }
                     return JSON.parse(localData);
                 } else {
@@ -571,7 +572,7 @@
                     const data = await this.fetchAll();
                     record.id = Date.now().toString(); 
                     data.push(record);
-                    localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
+                    localStorage.setItem('mystery_books_shared_v5', JSON.stringify(data));
                     return record;
                 } else {
                     record.id = Date.now().toString(); 
@@ -587,10 +588,10 @@
             async update(id, updatedFields) {
                 if (CONFIG.USE_LOCAL_MOCK) {
                     const data = await this.fetchAll();
-                    const index = data.findIndex(item => item.id === id);
+                    const index = data.findIndex(item => item.id === String(id));
                     if (index !== -1) {
                         data[index] = { ...data[index], ...updatedFields };
-                        localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
+                        localStorage.setItem('mystery_books_shared_v5', JSON.stringify(data));
                     }
                     return data[index];
                 } else {
@@ -606,8 +607,8 @@
             async delete(id) {
                 if (CONFIG.USE_LOCAL_MOCK) {
                     let data = await this.fetchAll();
-                    data = data.filter(item => item.id !== id);
-                    localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
+                    data = data.filter(item => item.id !== String(id));
+                    localStorage.setItem('mystery_books_shared_v5', JSON.stringify(data));
                     return true;
                 } else {
                     const response = await fetch(`${CONFIG.API_URL}/id/${id}`, {
@@ -618,7 +619,6 @@
                 }
             },
 
-            // 批量更新同一作者的生卒年
             async updateAuthorYears(authorName, birth, death) {
                 const booksToUpdate = state.books.filter(b => b.authorName === authorName);
                 for (let book of booksToUpdate) {
@@ -627,322 +627,4 @@
             }
         };
 
-        /* ==========================================
-         * 2. 页面业务逻辑与渲染
-         * ========================================== */
-        let state = { books: [] };
-
-        document.addEventListener('DOMContentLoaded', refreshData);
-
-        async function refreshData() {
-            try {
-                showLoading(true);
-                state.books = await DataAdapter.fetchAll();
-                renderShelf();
-                populateAuthorSelect();
-            } catch (error) {
-                console.error("数据操作失败:", error);
-                document.getElementById('shelf').innerHTML = `<div class="loading" style="color:var(--accent-color)">数据加载失败，请刷新重试。</div>`;
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        function renderShelf() {
-            const shelfEl = document.getElementById('shelf');
-            shelfEl.innerHTML = '';
-
-            if (!Array.isArray(state.books) || state.books.length === 0 || state.books[0].id === undefined) {
-                shelfEl.innerHTML = '<div class="loading">书架空空如也，等待着新的谜题...</div>';
-                return;
-            }
-
-            const groups = {};
-            state.books.forEach(book => {
-                const authorKey = book.authorName;
-                if (!groups[authorKey]) {
-                    groups[authorKey] = {
-                        name: book.authorName,
-                        birth: book.authorBirth || '',
-                        death: book.authorDeath || '',
-                        books: []
-                    };
-                }
-                groups[authorKey].books.push(book);
-            });
-
-            Object.values(groups).forEach(group => {
-                let yearsStr = '';
-                if (group.birth && group.death) {
-                    yearsStr = `(${group.birth}-${group.death})`;
-                } else if (group.birth) {
-                    yearsStr = `(${group.birth} ~ 至今)`;
-                }
-
-                const authorCard = document.createElement('div');
-                authorCard.className = 'author-card';
-
-                let booksHTML = '';
-                group.books.forEach(book => {
-                    // 读取两人的独立状态，兼容老数据（如果老数据为空，则默认显示想读）
-                    const statusMoon = book.statusMoon || '想读';
-                    const statusFish = book.statusFish || '想读';
-
-                    const tagMoonClass = statusMoon === '已读' ? 'tag-read' : 'tag-want';
-                    const tagFishClass = statusFish === '已读' ? 'tag-read' : 'tag-want';
-
-                    const nextMoonStatus = statusMoon === '已读' ? '想读' : '已读';
-                    const nextFishStatus = statusFish === '已读' ? '想读' : '已读';
-                    
-                    const moonNotesRender = book.notesMoon ? escapeHtml(book.notesMoon) : '<span class="notes-empty">期待手记录入...</span>';
-                    const fishNotesRender = book.notesFish ? escapeHtml(book.notesFish) : '<span class="notes-empty">期待手记录入...</span>';
-
-                    booksHTML += `
-                        <div class="book-item">
-                            <div class="book-info">
-                                <div class="book-title-row">
-                                    <span class="book-title">《${escapeHtml(book.bookTitle)}》</span>
-                                    <div class="tags-wrapper">
-                                        <span class="tag ${tagMoonClass}">🌙 ${statusMoon}</span>
-                                        <span class="tag ${tagFishClass}">🐟 ${statusFish}</span>
-                                    </div>
-                                </div>
-                                <div class="notes-container">
-                                    <div class="book-notes">
-                                        <div class="notes-profile">
-                                            <span class="notes-emoji" onclick="fastToggleStatus('${book.id}', 'Moon', '${nextMoonStatus}')" title="点击快速切换状态">🌙</span>
-                                        </div>
-                                        <span class="notes-text">${moonNotesRender}</span>
-                                    </div>
-                                    <div class="book-notes">
-                                        <div class="notes-profile">
-                                            <span class="notes-emoji" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextFishStatus}')" title="点击快速切换状态">🐟</span>
-                                        </div>
-                                        <span class="notes-text">${fishNotesRender}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="book-actions">
-                                <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Moon', '${nextMoonStatus}')">🌙→${nextMoonStatus}</button>
-                                <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextFishStatus}')">🐟→${nextFishStatus}</button>
-                                <button class="btn btn-sm btn-primary" onclick="openEditModal('${book.id}', '${escapeJs(book.bookTitle)}', '${escapeJs(book.notesMoon || '')}', '${escapeJs(book.notesFish || '')}', '${escapeJs(group.name)}', '${escapeJs(group.birth)}', '${escapeJs(group.death)}')">
-                                    勘误批注
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                authorCard.innerHTML = `
-                    <h3 class="author-header">
-                        <span>${escapeHtml(group.name)}</span>
-                        <span class="author-years">${yearsStr}</span>
-                    </h3>
-                    <div class="book-list">
-                        ${booksHTML}
-                    </div>
-                `;
-                shelfEl.appendChild(authorCard);
-            });
-        }
-
-        function populateAuthorSelect() {
-            const select = document.getElementById('bookAuthorSelect');
-            select.innerHTML = '';
-            
-            const authors = [];
-            const seen = new Set();
-            if(Array.isArray(state.books)) {
-                state.books.forEach(b => {
-                    if (b.authorName && !seen.has(b.authorName)) {
-                        seen.add(b.authorName);
-                        authors.push({ name: b.authorName, birth: b.authorBirth, death: b.authorDeath });
-                    }
-                });
-            }
-
-            if(authors.length === 0) {
-                const opt = document.createElement('option');
-                opt.value = "";
-                opt.textContent = "暂无已有作者，请选择新作者";
-                select.appendChild(opt);
-                document.getElementById('authorType').value = 'new';
-                toggleAuthorInput();
-                return;
-            }
-
-            authors.forEach(auth => {
-                const opt = document.createElement('option');
-                opt.value = auth.name;
-                opt.textContent = auth.name;
-                opt.dataset.birth = auth.birth || '';
-                opt.dataset.death = auth.death || '';
-                select.appendChild(opt);
-            });
-        }
-
-        /* ==========================================
-         * 3. 交互行为
-         * ========================================== */
-        async function fastToggleStatus(id, person, nextStatus) {
-            try {
-                showLoading(true);
-                const updateField = person === 'Moon' ? { statusMoon: nextStatus } : { statusFish: nextStatus };
-                await DataAdapter.update(id, updateField);
-                await refreshData();
-            } catch (e) {
-                alert("变更状态失败。");
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        async function saveNotesEdit(event) {
-            event.preventDefault();
-            const id = document.getElementById('editBookId').value;
-            const authorName = document.getElementById('editAuthorNameHidden').value;
-            const birth = document.getElementById('editAuthorBirth').value.trim();
-            const death = document.getElementById('editAuthorDeath').value.trim();
-            const notesMoon = document.getElementById('editNotesMoonText').value;
-            const notesFish = document.getElementById('editNotesFishText').value;
-
-            try {
-                closeModal('editModal');
-                showLoading(true);
-                // 1. 更新书本批注
-                await DataAdapter.update(id, { notesMoon, notesFish });
-                // 2. 同步更新该作者所有书的生卒年
-                await DataAdapter.updateAuthorYears(authorName, birth, death);
-                await refreshData();
-            } catch (e) {
-                alert("保存失败。");
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        async function saveNewBook(event) {
-            event.preventDefault();
-            
-            const authorType = document.getElementById('authorType').value;
-            let authorName, authorBirth, authorDeath;
-
-            if (authorType === 'existing') {
-                const select = document.getElementById('bookAuthorSelect');
-                if(!select.value) { alert('请先选择或创建一位作者。'); return; }
-                authorName = select.value;
-                const selectedOpt = select.options[select.selectedIndex];
-                authorBirth = selectedOpt.dataset.birth;
-                authorDeath = selectedOpt.dataset.death;
-            } else {
-                authorName = document.getElementById('newAuthorName').value.trim();
-                authorBirth = document.getElementById('newAuthorBirth').value.trim();
-                authorDeath = document.getElementById('newAuthorDeath').value.trim();
-                if (!authorName) { alert('请输入作者姓名。'); return; }
-            }
-
-            const bookTitle = document.getElementById('bookTitle').value.trim();
-
-            // 【核心功能：查重机制】
-            const isDuplicate = state.books.some(b => 
-                b.authorName.toLowerCase() === authorName.toLowerCase() && 
-                b.bookTitle.toLowerCase() === bookTitle.toLowerCase()
-            );
-            if (isDuplicate) {
-                alert(`档案查重提示：\n该作者旗下已存在《${bookTitle}》的记录，请勿重复录入！`);
-                return;
-            }
-
-            const newBook = {
-                authorName,
-                authorBirth,
-                authorDeath,
-                bookTitle,
-                statusMoon: document.getElementById('bookStatusMoon').value,
-                statusFish: document.getElementById('bookStatusFish').value,
-                notesMoon: document.getElementById('bookNotesMoon').value.trim(),
-                notesFish: document.getElementById('bookNotesFish').value.trim()
-            };
-
-            try {
-                closeModal('addModal');
-                showLoading(true);
-                await DataAdapter.create(newBook);
-                document.getElementById('addBookForm').reset();
-                toggleAuthorInput(); 
-                await refreshData();
-            } catch (e) {
-                alert("新书录入失败。");
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        // 【核心功能：删除记录】
-        async function deleteCurrentBook() {
-            const id = document.getElementById('editBookId').value;
-            const title = document.getElementById('editModalBookTitle').textContent;
-            
-            if (confirm(`🚨 探长决断确认：\n你确定要彻底销毁 ${title} 的全部档案记录吗？此操作无法撤销。`)) {
-                try {
-                    closeModal('editModal');
-                    showLoading(true);
-                    await DataAdapter.delete(id);
-                    await refreshData();
-                } catch (e) {
-                    alert("档案销毁失败。");
-                } finally {
-                    showLoading(false);
-                }
-            }
-        }
-
-        /* ==========================================
-         * 4. 辅助工具
-         * ========================================== */
-        function openAddModal() { 
-            document.getElementById('addModal').classList.add('active'); 
-        }
-        function closeModal(modalId) { 
-            document.getElementById(modalId).classList.remove('active'); 
-        }
-
-        function openEditModal(id, title, notesMoon, notesFish, authorName, birth, death) {
-            document.getElementById('editBookId').value = id;
-            document.getElementById('editAuthorNameHidden').value = authorName;
-            document.getElementById('editModalBookTitle').textContent = `《${title}》`;
-            document.getElementById('editAuthorBirth').value = birth === '?' ? '' : birth;
-            document.getElementById('editAuthorDeath').value = death;
-            document.getElementById('editNotesMoonText').value = notesMoon;
-            document.getElementById('editNotesFishText').value = notesFish;
-            document.getElementById('editModal').classList.add('active');
-        }
-
-        function toggleAuthorInput() {
-            const type = document.getElementById('authorType').value;
-            document.getElementById('existingAuthorGroup').style.display = type === 'existing' ? 'block' : 'none';
-            document.getElementById('newAuthorGroup').style.display = type === 'new' ? 'block' : 'none';
-        }
-
-        function showLoading(show) {
-            const shelfEl = document.getElementById('shelf');
-            if(show) {
-                shelfEl.style.opacity = '0.4';
-                shelfEl.style.pointerEvents = 'none';
-            } else {
-                shelfEl.style.opacity = '1';
-                shelfEl.style.pointerEvents = 'auto';
-            }
-        }
-
-        function escapeHtml(str) {
-            if(!str) return '';
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-        function escapeJs(str) {
-            if(!str) return '';
-            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
-        }
-    </script>
-</body>
-</html>
+        /* =================================
