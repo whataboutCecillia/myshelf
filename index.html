@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=no">
     <title>共享书架 🌙&🐟</title>
     <style>
-        /* --- 视觉风格与全局变量 (明亮浅色/实体书架主题) --- */
+        /* --- 视觉风格与全局变量 --- */
         :root {
             --bg-color: #f7f9fa;       
             --panel-bg: #ffffff;       
@@ -23,11 +23,7 @@
             --wood-shelf: #8b5a2b;     
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             background-color: var(--bg-color);
@@ -38,12 +34,8 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+        .container { max-width: 900px; margin: 0 auto; }
 
-        /* --- 头部与控制区 --- */
         header {
             text-align: center;
             margin-bottom: 2rem;
@@ -51,26 +43,11 @@
             padding-bottom: 1.2rem;
         }
 
-        header h1 {
-            font-size: 2.2rem;
-            letter-spacing: 4px;
-            color: var(--accent-color);
-        }
+        header h1 { font-size: 2.2rem; letter-spacing: 4px; color: var(--accent-color); }
+        header p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem; font-style: italic; }
 
-        header p {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-top: 0.5rem;
-            font-style: italic;
-        }
+        .actions-bar { display: flex; justify-content: flex-end; margin-bottom: 1.5rem; }
 
-        .actions-bar {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 1.5rem;
-        }
-
-        /* --- 通用按钮样式 --- */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -87,44 +64,14 @@
             min-height: 38px;
         }
 
-        .btn:hover {
-            border-color: var(--text-muted);
-            background-color: #f6f8fa;
-        }
+        .btn:hover { border-color: var(--text-muted); background-color: #f6f8fa; }
+        .btn-primary { background-color: var(--accent-color); border-color: var(--accent-color); color: #fff; }
+        .btn-primary:hover { background-color: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+        .btn-danger { color: var(--danger-color); border-color: #d1d5da; }
+        .btn-danger:hover { background-color: #ffeef0; border-color: var(--danger-color); }
+        .btn-sm { padding: 0.25rem 0.6rem; font-size: 0.8rem; min-height: 30px; }
 
-        .btn-primary {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--accent-hover);
-            border-color: var(--accent-hover);
-            color: #fff;
-        }
-
-        .btn-danger {
-            color: var(--danger-color);
-            border-color: #d1d5da;
-        }
-        .btn-danger:hover {
-            background-color: #ffeef0;
-            border-color: var(--danger-color);
-        }
-
-        .btn-sm {
-            padding: 0.25rem 0.6rem;
-            font-size: 0.8rem;
-            min-height: 30px;
-        }
-
-        /* --- 书架与作者卡片 --- */
-        .shelf-container {
-            display: flex;
-            flex-direction: column;
-            gap: 2.5rem;
-        }
+        .shelf-container { display: flex; flex-direction: column; gap: 2.5rem; }
 
         .author-card {
             background-color: var(--panel-bg);
@@ -137,287 +84,81 @@
         }
 
         .author-card::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: -1px;
-            width: calc(100% + 2px);
-            height: 8px;
-            background: var(--wood-shelf);
-            border-radius: 0 0 4px 4px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.12);
+            content: ''; position: absolute; bottom: -8px; left: -1px; width: calc(100% + 2px); height: 8px;
+            background: var(--wood-shelf); border-radius: 0 0 4px 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.12);
         }
 
         .author-header {
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
-            color: var(--text-main);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            font-size: 1.2rem; margin-bottom: 1rem; color: var(--text-main);
+            border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;
+            display: flex; align-items: center; justify-content: space-between;
         }
 
-        .author-years {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            font-weight: normal;
-        }
+        .author-years { font-size: 0.85rem; color: var(--text-muted); font-weight: normal; }
+        .author-title-wrapper, .order-controls { display: flex; align-items: center; gap: 0.4rem; }
 
-        .author-title-wrapper, .order-controls {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        /* --- 图书列表 --- */
-        .book-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
+        .book-list { display: flex; flex-direction: column; gap: 1rem; }
         .book-item {
-            display: flex;
-            flex-direction: column;
-            background: #fafbfc;
-            padding: 1rem;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            gap: 0.8rem;
+            display: flex; flex-direction: column; background: #fafbfc; padding: 1rem;
+            border-radius: 6px; border: 1px solid var(--border-color); gap: 0.8rem;
         }
 
         @media (min-width: 600px) {
-            .book-item {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: flex-start;
-                gap: 1.5rem;
-            }
+            .book-item { flex-direction: row; justify-content: space-between; align-items: flex-start; gap: 1.5rem; }
         }
 
-        .book-info {
-            flex-grow: 1;
-            min-width: 0;
-        }
+        .book-info { flex-grow: 1; min-width: 0; }
+        .book-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .book-title { font-weight: bold; font-size: 1.05rem; color: var(--text-main); }
+        .tags-wrapper { display: inline-flex; gap: 0.3rem; }
 
-        .book-title-row {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
+        .tag { font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 3px; font-weight: bold; border: 1px solid transparent; white-space: nowrap; }
+        .tag-read { background-color: var(--read-tag); color: var(--read-text); border-color: #34d05840; }
+        .tag-want { background-color: var(--want-tag); color: var(--want-text); border-color: #0366d630; }
 
-        .book-title {
-            font-weight: bold;
-            font-size: 1.05rem;
-            color: var(--text-main);
-        }
-
-        .tags-wrapper {
-            display: inline-flex;
-            gap: 0.3rem;
-        }
-
-        .tag {
-            font-size: 0.7rem;
-            padding: 0.1rem 0.4rem;
-            border-radius: 3px;
-            font-weight: bold;
-            border: 1px solid transparent;
-            white-space: nowrap;
-        }
-
-        .tag-read {
-            background-color: var(--read-tag);
-            color: var(--read-text);
-            border-color: #34d05840;
-        }
-
-        .tag-want {
-            background-color: var(--want-tag);
-            color: var(--want-text);
-            border-color: #0366d630;
-        }
-
-        .notes-container {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
-        }
-
+        .notes-container { display: flex; flex-direction: column; gap: 0.4rem; }
         .book-notes {
-            font-size: 0.88rem;
-            color: var(--text-main);
-            background: #fff;
-            padding: 0.4rem 0.6rem;
-            border-radius: 4px;
-            border: 1px dashed #e1e4e8;
-            display: flex;
-            gap: 0.5rem;
-            align-items: flex-start;
+            font-size: 0.88rem; color: var(--text-main); background: #fff; padding: 0.4rem 0.6rem;
+            border-radius: 4px; border: 1px dashed #e1e4e8; display: flex; gap: 0.5rem; align-items: flex-start;
         }
 
-        .notes-profile {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            flex-shrink: 0;
-        }
+        .notes-profile { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
+        .notes-emoji { font-size: 0.95rem; user-select: none; cursor: pointer; }
+        .notes-text { color: var(--text-main); word-break: break-all; }
+        .notes-empty { color: var(--text-muted); font-style: italic; font-size: 0.85rem; }
 
-        .notes-emoji {
-            font-size: 0.95rem;
-            user-select: none;
-            cursor: pointer;
-        }
-        
-        .notes-text {
-            color: var(--text-main);
-            word-break: break-all;
-        }
-
-        .notes-empty {
-            color: var(--text-muted);
-            font-style: italic;
-            font-size: 0.85rem;
-        }
-
-        .book-actions {
-            display: flex;
-            gap: 0.4rem;
-            flex-wrap: wrap;
-            justify-content: flex-start;
-            border-top: 1px solid #e1e4e860;
-            padding-top: 0.6rem;
-        }
+        .book-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-start; border-top: 1px solid #e1e4e860; padding-top: 0.6rem; }
 
         @media (min-width: 600px) {
-            .book-actions {
-                flex-direction: column;
-                align-items: flex-end;
-                border-top: none;
-                padding-top: 0;
-                margin-top: 2px;
-            }
+            .book-actions { flex-direction: column; align-items: flex-end; border-top: none; padding-top: 0; margin-top: 2px; }
         }
 
-        /* --- 弹窗/模态框 --- */
+        /* --- 弹窗 --- */
         .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            backdrop-filter: blur(2px);
-            justify-content: center;
-            align-items: flex-end;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); backdrop-filter: blur(2px); justify-content: center; align-items: flex-end;
         }
-
-        @media (min-width: 600px) {
-            .modal {
-                align-items: center;
-            }
-        }
+        @media (min-width: 600px) { .modal { align-items: center; } }
 
         .modal-content {
-            background-color: var(--panel-bg);
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
-            padding: 1.5rem;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            background-color: var(--panel-bg); border-top-left-radius: 12px; border-top-right-radius: 12px;
+            padding: 1.5rem; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
         }
+        @media (min-width: 600px) { .modal-content { border-radius: 8px; max-width: 500px; border: 1px solid #d1d5da; box-shadow: 0 8px 24px rgba(0,0,0,0.15); } }
 
-        @media (min-width: 600px) {
-            .modal-content {
-                border-radius: 8px;
-                max-width: 500px;
-                border: 1px solid #d1d5da;
-                box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            }
-        }
+        .modal-header { font-size: 1.15rem; margin-bottom: 1.2rem; color: var(--accent-color); font-weight: bold; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.3rem; font-weight: bold; }
+        .form-control { width: 100%; background-color: #fff; border: 1px solid #d1d5da; color: var(--text-main); padding: 0.55rem; border-radius: 4px; font-size: 0.95rem; -webkit-appearance: none; }
+        .form-control:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(163,0,0,0.1); }
+        .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
-        .modal-header {
-            font-size: 1.15rem;
-            margin-bottom: 1.2rem;
-            color: var(--accent-color);
-            font-weight: bold;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 0.5rem;
-        }
+        .modal-footer { display: flex; flex-direction: column-reverse; gap: 0.5rem; margin-top: 1.5rem; }
+        @media (min-width: 600px) { .modal-footer { flex-direction: row; justify-content: flex-end; } }
+        .modal-footer .btn { width: 100%; }
+        @media (min-width: 600px) { .modal-footer .btn { width: auto; } }
 
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 0.3rem;
-            font-weight: bold;
-        }
-
-        .form-control {
-            width: 100%;
-            background-color: #fff;
-            border: 1px solid #d1d5da;
-            color: var(--text-main);
-            padding: 0.55rem;
-            border-radius: 4px;
-            font-size: 0.95rem;
-            -webkit-appearance: none;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(163,0,0,0.1);
-        }
-
-        .form-row-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
-        .modal-footer {
-            display: flex;
-            flex-direction: column-reverse;
-            gap: 0.5rem;
-            margin-top: 1.5rem;
-        }
-
-        @media (min-width: 600px) {
-            .modal-footer {
-                flex-direction: row;
-                justify-content: flex-end;
-            }
-        }
-
-        .modal-footer .btn {
-            width: 100%;
-        }
-
-        @media (min-width: 600px) {
-            .modal-footer .btn {
-                width: auto;
-            }
-        }
-
-        .loading {
-            text-align: center;
-            padding: 3rem;
-            color: var(--text-muted);
-            font-style: italic;
-        }
+        .loading { text-align: center; padding: 3rem; color: var(--text-muted); font-style: italic; }
     </style>
 </head>
 <body>
@@ -439,19 +180,19 @@
 
     <div id="addModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">档案录入：添加新书</div>
+            <div class="modal-header">档案录入</div>
             <form id="addBookForm" onsubmit="saveNewBook(event)">
                 <div class="form-group">
                     <label>作者类型</label>
                     <select id="authorType" class="form-control" onchange="toggleAuthorInput()">
                         <option value="existing">已有作者</option>
-                        <option value="new">新作者</option>
+                        <option value="new">新增作者</option>
                     </select>
                 </div>
                 
                 <div class="form-group" id="existingAuthorGroup">
-                    <label>选择或输入选择已有作者（支持输入自动联想）</label>
-                    <input type="text" id="bookAuthorSelect" class="form-control" list="authorDatalist" placeholder="输入名字自动过滤联想...">
+                    <label>选择或输入已有作者</label>
+                    <input type="text" id="bookAuthorSelect" class="form-control" list="authorDatalist" placeholder="">
                     <datalist id="authorDatalist"></datalist>
                 </div>
 
@@ -494,11 +235,11 @@
                 </div>
                 <div class="form-group">
                     <label>🌙 的手记批注</label>
-                    <textarea id="bookNotesMoon" class="form-control" rows="2" placeholder="写下你的推理或评语..."></textarea>
+                    <textarea id="bookNotesMoon" class="form-control" rows="2" placeholder="写下你的评语..."></textarea>
                 </div>
                 <div class="form-group">
                     <label>🐟 的手记批注</label>
-                    <textarea id="bookNotesFish" class="form-control" rows="2" placeholder="写下你的推理或评语..."></textarea>
+                    <textarea id="bookNotesFish" class="form-control" rows="2" placeholder="写下你的评语..."></textarea>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn" onclick="closeModal('addModal')">取消</button>
@@ -510,7 +251,7 @@
 
     <div id="editModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">勘误批注与作者生卒年</div>
+            <div class="modal-header">编辑</div>
             <form id="editNotesForm" onsubmit="saveNotesEdit(event)">
                 <input type="hidden" id="editBookId">
                 <input type="hidden" id="editAuthorNameHidden">
@@ -537,7 +278,7 @@
                 </div>
                 <div class="modal-footer" style="justify-content: space-between; flex-direction: row; flex-wrap: wrap;">
                     <button type="button" class="btn btn-danger" onclick="deleteCurrentBook()">销毁此记录</button>
-                    <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: flex-end;" class="mobile-grid-fix">
+                    <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: flex-end;">
                         <button type="button" class="btn" onclick="closeModal('editModal')" style="width: auto;">取消</button>
                         <button type="submit" class="btn btn-primary" style="width: auto;">保存修改</button>
                     </div>
@@ -548,7 +289,7 @@
 
     <script>
         /* ==========================================
-         * 1. 配置项与数据适配层 (Data Adapter)
+         * 1. 配置项与云端数据对接层 (完全依赖后端 sortOrder)
          * ========================================== */
         const CONFIG = {
             API_URL: 'https://sheetdb.io/api/v1/gmckvbct32rf5', 
@@ -558,11 +299,8 @@
         const DataAdapter = {
             async fetchAll() {
                 if (CONFIG.USE_LOCAL_MOCK) {
-                    let localData = localStorage.getItem('mystery_books_shared_v4');
-                    if (localData === null) {
-                        localData = JSON.stringify([]);
-                        localStorage.setItem('mystery_books_shared_v4', localData);
-                    }
+                    let localData = localStorage.getItem('mystery_books_v5_sortorder');
+                    if (!localData) { localData = JSON.stringify([]); localStorage.setItem('mystery_books_v5_sortorder', localData); }
                     return JSON.parse(localData);
                 } else {
                     const response = await fetch(CONFIG.API_URL);
@@ -571,21 +309,18 @@
             },
 
             async create(record) {
-                if (CONFIG.USE_LOCAL_MOCK) {
-                    const data = await this.fetchAll();
-                    record.id = Date.now().toString(); 
-                    const maxOrder = data.reduce((max, b) => Math.max(max, parseInt(b.sortOrder || 0)), 0);
-                    record.sortOrder = (maxOrder + 1).toString();
+                // 自动计算最大的权重，确保新加的书在最下面
+                const data = await this.fetchAll();
+                const cleanData = Array.isArray(data) ? data.filter(b => b && b.authorName) : [];
+                const maxOrder = cleanData.reduce((max, b) => Math.max(max, parseInt(b.sortOrder) || 0), 0);
+                record.sortOrder = (maxOrder + 1).toString();
+                record.id = Date.now().toString(); 
 
-                    data.push(record);
-                    localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
+                if (CONFIG.USE_LOCAL_MOCK) {
+                    cleanData.push(record);
+                    localStorage.setItem('mystery_books_v5_sortorder', JSON.stringify(cleanData));
                     return record;
                 } else {
-                    record.id = Date.now().toString(); 
-                    const data = await this.fetchAll();
-                    const maxOrder = data.reduce((max, b) => Math.max(max, parseInt(b.sortOrder || 0)), 0);
-                    record.sortOrder = (maxOrder + 1).toString();
-
                     const response = await fetch(CONFIG.API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -601,7 +336,7 @@
                     const index = data.findIndex(item => item.id === id);
                     if (index !== -1) {
                         data[index] = { ...data[index], ...updatedFields };
-                        localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
+                        localStorage.setItem('mystery_books_v5_sortorder', JSON.stringify(data));
                     }
                     return data[index];
                 } else {
@@ -618,7 +353,7 @@
                 if (CONFIG.USE_LOCAL_MOCK) {
                     let data = await this.fetchAll();
                     data = data.filter(item => item.id !== id);
-                    localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
+                    localStorage.setItem('mystery_books_v5_sortorder', JSON.stringify(data));
                     return true;
                 } else {
                     const response = await fetch(`${CONFIG.API_URL}/id/${id}`, {
@@ -638,7 +373,7 @@
         };
 
         /* ==========================================
-         * 2. 页面业务逻辑与渲染
+         * 2. 状态控制与渲染逻辑
          * ========================================== */
         let state = { books: [] };
         let globalAuthorMap = {}; 
@@ -651,23 +386,18 @@
                 const rawBooks = await DataAdapter.fetchAll();
                 
                 if (Array.isArray(rawBooks)) {
-                    // 【核心排序与无列兼容逻辑】
-                    // 第一步：先对原始数据按照 “作者生年” 升序排列（没有写生年的排到最后）。
-                    // 生年相同时，保留原本在表格里的物理顺序。
-                    const baseSorted = [...rawBooks].sort((a, b) => {
-                        const birthA = parseInt(a.authorBirth) || 9999;
-                        const birthB = parseInt(b.authorBirth) || 9999;
-                        return birthA - birthB;
-                    });
-
-                    // 第二步：如果数据里的 sortOrder 还没有设置或被重置（即不存在该列），
-                    // 就直接将上一步“按生年排好”的序号作为临时数字赋予它，这样免去用户自行建列和维护。
-                    state.books = baseSorted.map((book, idx) => {
+                    // 数据清洗：只保留有书名和作者名的数据行
+                    const cleanBooks = rawBooks.filter(book => book && book.bookTitle && book.authorName);
+                    
+                    // 【正统物理排序】：完全遵循后端的 sortOrder 字段排序
+                    // 如果老数据未填 sortOrder，默认根据其在数组里的自然索引赋予兜底值，不卡死
+                    state.books = cleanBooks.map((book, idx) => {
                         if (!book.sortOrder || book.sortOrder === "" || book.sortOrder === "0") {
                             book.sortOrder = (idx + 1).toString();
                         }
                         return book;
-                    });
+                    }).sort((a, b) => (parseInt(a.sortOrder) || 0) - (parseInt(b.sortOrder) || 0));
+
                 } else {
                     state.books = [];
                 }
@@ -675,8 +405,8 @@
                 renderShelf();
                 populateAuthorSelect();
             } catch (error) {
-                console.error("数据操作失败:", error);
-                document.getElementById('shelf').innerHTML = `<div class="loading" style="color:var(--accent-color)">数据加载失败，请刷新重试。</div>`;
+                console.error("数据加载失败:", error);
+                document.getElementById('shelf').innerHTML = `<div class="loading" style="color:var(--accent-color)">书架更新失败，请检查 SheetDB 是否已正确添加了 sortOrder 列。</div>`;
             } finally {
                 showLoading(false);
             }
@@ -686,16 +416,15 @@
             const shelfEl = document.getElementById('shelf');
             shelfEl.innerHTML = '';
 
-            if (!Array.isArray(state.books) || state.books.length === 0 || state.books[0].id === undefined) {
+            if (state.books.length === 0) {
                 shelfEl.innerHTML = '<div class="loading">书架空空如也，等待着新的谜题...</div>';
                 return;
             }
 
-            // 完全遵循 sortOrder 赋予的权重排序，如果是首用，默认已被生年规则铺底。
-            const sortedBooks = [...state.books].sort((a, b) => {
-                return parseInt(a.sortOrder) - parseInt(b.sortOrder);
-            });
+            // 完全遵循从后端读出的权重链路进行渲染
+            const sortedBooks = [...state.books].sort((a, b) => (parseInt(a.sortOrder) || 0) - (parseInt(b.sortOrder) || 0));
 
+            // 按作者归类，并记录该作者旗下所有书的最小 sortOrder，用于决定作者卡片之间的宏观顺序
             const groups = {};
             sortedBooks.forEach(book => {
                 const authorKey = book.authorName;
@@ -705,23 +434,21 @@
                         birth: book.authorBirth || '',
                         death: book.authorDeath || '',
                         books: [],
-                        minSortOrder: parseInt(book.sortOrder) 
+                        minSortOrder: parseInt(book.sortOrder) || 9999
                     };
                 } else {
-                    groups[authorKey].minSortOrder = Math.min(groups[authorKey].minSortOrder, parseInt(book.sortOrder));
+                    groups[authorKey].minSortOrder = Math.min(groups[authorKey].minSortOrder, parseInt(book.sortOrder) || 9999);
                 }
                 groups[authorKey].books.push(book);
             });
 
+            // 作者卡片大排队：由组内最靠前的那本书的 sortOrder 决定
             const sortedGroupArray = Object.values(groups).sort((a, b) => a.minSortOrder - b.minSortOrder);
 
             sortedGroupArray.forEach((group, groupIdx) => {
                 let yearsStr = '';
-                if (group.birth && group.death) {
-                    yearsStr = `(${group.birth}-${group.death})`;
-                } else if (group.birth) {
-                    yearsStr = `(${group.birth} ~ 至今)`;
-                }
+                if (group.birth && group.death) { yearsStr = `(${group.birth}-${group.death})`; } 
+                else if (group.birth) { yearsStr = `(${group.birth} ~ 至今)`; }
 
                 const authorCard = document.createElement('div');
                 authorCard.className = 'author-card';
@@ -730,10 +457,8 @@
                 group.books.forEach((book, bookIdx) => {
                     const statusMoon = book.statusMoon || '想读';
                     const statusFish = book.statusFish || '想读';
-
                     const tagMoonClass = statusMoon === '已读' ? 'tag-read' : 'tag-want';
                     const tagFishClass = statusFish === '已读' ? 'tag-read' : 'tag-want';
-
                     const nextMoonStatus = statusMoon === '已读' ? '想读' : '已读';
                     const nextFishStatus = statusFish === '已读' ? '想读' : '已读';
                     
@@ -752,15 +477,11 @@
                                 </div>
                                 <div class="notes-container">
                                     <div class="book-notes">
-                                        <div class="notes-profile">
-                                            <span class="notes-emoji" onclick="fastToggleStatus('${book.id}', 'Moon', '${nextMoonStatus}')" title="点击快速切换状态">🌙</span>
-                                        </div>
+                                        <div class="notes-profile"><span class="notes-emoji" onclick="fastToggleStatus('${book.id}', 'Moon', '${nextMoonStatus}')">🌙</span></div>
                                         <span class="notes-text">${moonNotesRender}</span>
                                     </div>
                                     <div class="book-notes">
-                                        <div class="notes-profile">
-                                            <span class="notes-emoji" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextFishStatus}')" title="点击快速切换状态">🐟</span>
-                                        </div>
+                                        <div class="notes-profile"><span class="notes-emoji" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextFishStatus}')">🐟</span></div>
                                         <span class="notes-text">${fishNotesRender}</span>
                                     </div>
                                 </div>
@@ -773,7 +494,7 @@
                                 <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Moon', '${nextMoonStatus}')">🌙→${nextMoonStatus}</button>
                                 <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextFishStatus}')">🐟→${nextFishStatus}</button>
                                 <button class="btn btn-sm btn-primary" onclick="openEditModal('${book.id}', '${escapeJs(book.bookTitle)}', '${escapeJs(book.notesMoon || '')}', '${escapeJs(book.notesFish || '')}', '${escapeJs(group.name)}', '${escapeJs(group.birth)}', '${escapeJs(group.death)}')">
-                                    勘误批注
+                                    编辑
                                 </button>
                             </div>
                         </div>
@@ -799,43 +520,11 @@
             });
         }
 
-        function populateAuthorSelect() {
-            const datalist = document.getElementById('authorDatalist');
-            datalist.innerHTML = '';
-            globalAuthorMap = {}; 
-            
-            const authors = [];
-            const seen = new Set();
-            if(Array.isArray(state.books)) {
-                state.books.forEach(b => {
-                    if (b.authorName && !seen.has(b.authorName)) {
-                        seen.add(b.authorName);
-                        authors.push({ name: b.authorName, birth: b.authorBirth, death: b.authorDeath });
-                        globalAuthorMap[b.authorName] = { birth: b.authorBirth || '', death: b.authorDeath || '' };
-                    }
-                });
-            }
-
-            if(authors.length === 0) {
-                document.getElementById('bookAuthorSelect').placeholder = "暂无已有作者，请切换新作者选项";
-                document.getElementById('authorType').value = 'new';
-                toggleAuthorInput();
-                return;
-            }
-
-            authors.forEach(auth => {
-                const opt = document.createElement('option');
-                opt.value = auth.name;
-                opt.label = auth.birth ? `生年: ${auth.birth}` : '健在/未知';
-                datalist.appendChild(opt);
-            });
-        }
-
         /* ==========================================
-         * 3. 交互行为 与 增设的排序控制核心
+         * 3. 真正操作后端 sortOrder 的移动功能
          * ========================================== */
         async function moveBook(bookId, direction) {
-            const sortedBooks = [...state.books].sort((a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder));
+            const sortedBooks = [...state.books].sort((a, b) => (parseInt(a.sortOrder) || 0) - (parseInt(b.sortOrder) || 0));
             const index = sortedBooks.findIndex(b => b.id === bookId);
             if (index === -1) return;
 
@@ -845,32 +534,30 @@
             const currentBook = sortedBooks[index];
             const targetBook = sortedBooks[targetIndex];
 
+            // 完美的云端对调权重机制
             const currentOrder = currentBook.sortOrder;
             const targetOrder = targetBook.sortOrder;
 
             try {
                 showLoading(true);
+                // 真正推送到后端的改动，完全不碰生卒年数字！
                 await Promise.all([
                     DataAdapter.update(currentBook.id, { sortOrder: targetOrder }),
                     DataAdapter.update(targetBook.id, { sortOrder: currentOrder })
                 ]);
                 await refreshData();
             } catch (e) {
-                alert("调整顺序失败，请重试。");
+                alert("调整顺序失败，请确认表格中是否创建了有效的 sortOrder 列。");
             } finally {
                 showLoading(false);
             }
         }
 
         async function moveAuthor(authorName, direction) {
-            const sortedBooks = [...state.books].sort((a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder));
+            const sortedBooks = [...state.books].sort((a, b) => (parseInt(a.sortOrder) || 0) - (parseInt(b.sortOrder) || 0));
 
             const authorsOrder = [];
-            sortedBooks.forEach(b => {
-                if (!authorsOrder.includes(b.authorName)) {
-                    authorsOrder.push(b.authorName);
-                }
-            });
+            sortedBooks.forEach(b => { if (!authorsOrder.includes(b.authorName)) authorsOrder.push(b.authorName); });
 
             const index = authorsOrder.indexOf(authorName);
             if (index === -1) return;
@@ -883,8 +570,9 @@
             const currentAuthorBooks = sortedBooks.filter(b => b.authorName === authorName);
             const targetAuthorBooks = sortedBooks.filter(b => b.authorName === targetAuthorName);
 
+            // 收集两个集合所有的旧 sortOrder 坑位分布
             const allOrders = [...currentAuthorBooks, ...targetAuthorBooks]
-                              .map(b => parseInt(b.sortOrder))
+                              .map(b => parseInt(b.sortOrder) || 0)
                               .sort((a, b) => a - b);
 
             try {
@@ -910,7 +598,7 @@
                 await Promise.all(updatePromises);
                 await refreshData();
             } catch (e) {
-                alert("调整作者顺序失败。");
+                alert("整体调整作者失败。");
             } finally {
                 showLoading(false);
             }
@@ -922,11 +610,7 @@
                 const updateField = person === 'Moon' ? { statusMoon: nextStatus } : { statusFish: nextStatus };
                 await DataAdapter.update(id, updateField);
                 await refreshData();
-            } catch (e) {
-                alert("变更状态失败。");
-            } finally {
-                showLoading(false);
-            }
+            } catch (e) { alert("状态变更失败。"); } finally { showLoading(false); }
         }
 
         async function saveNotesEdit(event) {
@@ -944,16 +628,11 @@
                 await DataAdapter.update(id, { notesMoon, notesFish });
                 await DataAdapter.updateAuthorYears(authorName, birth, death);
                 await refreshData();
-            } catch (e) {
-                alert("保存失败。");
-            } finally {
-                showLoading(false);
-            }
+            } catch (e) { alert("保存失败。"); } finally { showLoading(false); }
         }
 
         async function saveNewBook(event) {
             event.preventDefault();
-            
             const authorType = document.getElementById('authorType').value;
             let authorName, authorBirth, authorDeath;
 
@@ -961,14 +640,8 @@
                 const inputVal = document.getElementById('bookAuthorSelect').value.trim();
                 if(!inputVal) { alert('请先选择或输入一位已有作者。'); return; }
                 authorName = inputVal;
-                
-                if (globalAuthorMap[authorName]) {
-                    authorBirth = globalAuthorMap[authorName].birth;
-                    authorDeath = globalAuthorMap[authorName].death;
-                } else {
-                    authorBirth = '';
-                    authorDeath = '';
-                }
+                authorBirth = globalAuthorMap[authorName]?.birth || '';
+                authorDeath = globalAuthorMap[authorName]?.death || '';
             } else {
                 authorName = document.getElementById('newAuthorName').value.trim();
                 authorBirth = document.getElementById('newAuthorBirth').value.trim();
@@ -977,21 +650,11 @@
             }
 
             const bookTitle = document.getElementById('bookTitle').value.trim();
-
-            const isDuplicate = state.books.some(b => 
-                b.authorName.toLowerCase() === authorName.toLowerCase() && 
-                b.bookTitle.toLowerCase() === bookTitle.toLowerCase()
-            );
-            if (isDuplicate) {
-                alert(`档案查重提示：\n该作者旗下已存在《${bookTitle}》的记录，请勿重复录入！`);
-                return;
-            }
+            const isDuplicate = state.books.some(b => b.authorName.toLowerCase() === authorName.toLowerCase() && b.bookTitle.toLowerCase() === bookTitle.toLowerCase());
+            if (isDuplicate) { alert(`已存在同作者同名书记录。`); return; }
 
             const newBook = {
-                authorName,
-                authorBirth,
-                authorDeath,
-                bookTitle,
+                authorName, authorBirth, authorDeath, bookTitle,
                 statusMoon: document.getElementById('bookStatusMoon').value,
                 statusFish: document.getElementById('bookStatusFish').value,
                 notesMoon: document.getElementById('bookNotesMoon').value.trim(),
@@ -1005,34 +668,40 @@
                 document.getElementById('addBookForm').reset();
                 toggleAuthorInput(); 
                 await refreshData();
-            } catch (e) {
-                alert("新书录入失败。");
-            } finally {
-                showLoading(false);
-            }
+            } catch (e) { alert("新书录入失败。"); } finally { showLoading(false); }
         }
 
         async function deleteCurrentBook() {
             const id = document.getElementById('editBookId').value;
-            if (!id) return;
-            
-            if (confirm("确定要彻底销毁这本图书的归档档案吗？此操作无法撤销。")) {
+            if (id && confirm("确定要彻底销毁这本图书的归档档案吗？")) {
                 try {
                     closeModal('editModal');
                     showLoading(true);
                     await DataAdapter.delete(id);
                     await refreshData();
-                } catch(e) {
-                    alert("销毁记录失败。");
-                } finally {
-                    showLoading(false);
-                }
+                } catch(e) { alert("销毁记录失败。"); } finally { showLoading(false); }
             }
         }
 
         /* ==========================================
-         * 4. 辅助视图与弹窗全局控制函数
+         * 4. 辅助视图与弹窗全局控制
          * ========================================== */
+        function populateAuthorSelect() {
+            const datalist = document.getElementById('authorDatalist');
+            datalist.innerHTML = '';
+            globalAuthorMap = {}; 
+            const seen = new Set();
+            state.books.forEach(b => {
+                if (b.authorName && !seen.has(b.authorName)) {
+                    seen.add(b.authorName);
+                    globalAuthorMap[b.authorName] = { birth: b.authorBirth || '', death: b.authorDeath || '' };
+                    const opt = document.createElement('option');
+                    opt.value = b.authorName;
+                    datalist.appendChild(opt);
+                }
+            });
+        }
+
         function openAddModal() {
             document.getElementById('addBookForm').reset();
             populateAuthorSelect();
@@ -1051,53 +720,32 @@
             document.getElementById('editModal').style.display = 'flex';
         }
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
+        function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
 
         function toggleAuthorInput() {
             const type = document.getElementById('authorType').value;
-            if (type === 'existing') {
-                document.getElementById('existingAuthorGroup').style.display = 'block';
-                document.getElementById('newAuthorGroup').style.display = 'none';
-            } else {
-                document.getElementById('existingAuthorGroup').style.display = 'none';
-                document.getElementById('newAuthorGroup').style.display = 'block';
-            }
+            document.getElementById('existingAuthorGroup').style.display = type === 'existing' ? 'block' : 'none';
+            document.getElementById('newAuthorGroup').style.display = type === 'new' ? 'block' : 'none';
         }
 
         function showLoading(show) {
             const shelf = document.getElementById('shelf');
-            if (show) {
-                if (shelf.innerHTML === '' || shelf.querySelector('.loading')) {
-                    shelf.innerHTML = '<div class="loading">正在更新数据，请稍候...</div>';
-                }
+            if (show && (shelf.innerHTML === '' || shelf.querySelector('.loading'))) {
+                shelf.innerHTML = '<div class="loading">正在更新云端数据，请稍候...</div>';
             }
         }
 
         function escapeHtml(str) {
             if (!str) return '';
-            return str.replace(/&/g, '&amp;')
-                      .replace(/</g, '&lt;')
-                      .replace(/>/g, '&gt;')
-                      .replace(/"/g, '&quot;')
-                      .replace(/'/g, '&#039;');
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
         }
 
         function escapeJs(str) {
             if (!str) return '';
-            return str.replace(/\\/g, '\\\\')
-                      .replace(/'/g, "\\'")
-                      .replace(/"/g, '\\"')
-                      .replace(/\n/g, '\\n')
-                      .replace(/\r/g, '\\r');
+            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
         }
 
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = 'none';
-            }
-        }
+        window.onclick = function(event) { if (event.target.classList.contains('modal')) event.target.style.display = 'none'; }
     </script>
 </body>
 </html>
