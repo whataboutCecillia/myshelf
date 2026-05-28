@@ -263,4 +263,686 @@
             flex-shrink: 0;
         }
 
-        .notes
+        .notes-emoji {
+            font-size: 0.95rem;
+            user-select: none;
+            cursor: pointer;
+        }
+        
+        .notes-text {
+            color: var(--text-main);
+            word-break: break-all;
+        }
+
+        .notes-empty {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 0.85rem;
+        }
+
+        /* 操作按钮组在手机和电脑上的兼容排版 */
+        .book-actions {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            border-top: 1px solid #e1e4e860;
+            padding-top: 0.6rem;
+        }
+
+        @media (min-width: 600px) {
+            .book-actions {
+                flex-direction: column;
+                align-items: flex-end;
+                border-top: none;
+                padding-top: 0;
+                margin-top: 2px;
+            }
+        }
+
+        /* --- 弹窗/模态框适配手机 --- */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(2px);
+            justify-content: center;
+            align-items: flex-end; /* 手机端抽屉式弹出 */
+            z-index: 1000;
+        }
+
+        @media (min-width: 600px) {
+            .modal {
+                align-items: center; /* 网页端居中弹出 */
+            }
+        }
+
+        .modal-content {
+            background-color: var(--panel-bg);
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            padding: 1.5rem;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+        }
+
+        @media (min-width: 600px) {
+            .modal-content {
+                border-radius: 8px;
+                max-width: 500px;
+                border: 1px solid #d1d5da;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            }
+        }
+
+        .modal-header {
+            font-size: 1.15rem;
+            margin-bottom: 1.2rem;
+            color: var(--accent-color);
+            font-weight: bold;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.3rem;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            background-color: #fff;
+            border: 1px solid #d1d5da;
+            color: var(--text-main);
+            padding: 0.55rem;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            -webkit-appearance: none; /* 移除iOS默认内阴影 */
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(163,0,0,0.1);
+        }
+
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            flex-direction: column-reverse; /* 手机上取消键在下面，防止误触 */
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        @media (min-width: 600px) {
+            .modal-footer {
+                flex-direction: row;
+                justify-content: flex-end;
+            }
+        }
+
+        .modal-footer .btn {
+            width: 100%;
+        }
+
+        @media (min-width: 600px) {
+            .modal-footer .btn {
+                width: auto;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>🌙&🐟</h1>
+            <p>不要再看推理小说了！</p>
+        </header>
+
+        <div class="actions-bar">
+            <button class="btn btn-primary" onclick="openAddModal()">+ 添加新书</button>
+        </div>
+
+        <div id="shelf" class="shelf-container">
+            <div class="loading">正在整理书架...</div>
+        </div>
+    </div>
+
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">档案录入：添加新书</div>
+            <form id="addBookForm" onsubmit="saveNewBook(event)">
+                <div class="form-group">
+                    <label>作者类型</label>
+                    <select id="authorType" class="form-control" onchange="toggleAuthorInput()">
+                        <option value="existing">已有作者</option>
+                        <option value="new">新作者</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="existingAuthorGroup">
+                    <label>选择作者</label>
+                    <select id="bookAuthorSelect" class="form-control"></select>
+                </div>
+
+                <div id="newAuthorGroup" style="display: none;">
+                    <div class="form-group">
+                        <label>作者姓名</label>
+                        <input type="text" id="newAuthorName" class="form-control">
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>生年</label>
+                            <input type="text" id="newAuthorBirth" class="form-control" placeholder="例：1958">
+                        </div>
+                        <div class="form-group">
+                            <label>卒年</label>
+                            <input type="text" id="newAuthorDeath" class="form-control" placeholder="健在请留空">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>书名</label>
+                    <input type="text" id="bookTitle" class="form-control" required>
+                </div>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label>🌙 阅读状态</label>
+                        <select id="bookStatusMoon" class="form-control">
+                            <option value="想读">想读</option>
+                            <option value="已读">已读</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🐟 阅读状态</label>
+                        <select id="bookStatusFish" class="form-control">
+                            <option value="想读">想读</option>
+                            <option value="已读">已读</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>🌙 的手记批注</label>
+                    <textarea id="bookNotesMoon" class="form-control" rows="2" placeholder="写下你的推理或评语..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>🐟 的手记批注</label>
+                    <textarea id="bookNotesFish" class="form-control" rows="2" placeholder="写下你的推理或评语..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" onclick="closeModal('addModal')">取消</button>
+                    <button type="submit" class="btn btn-primary">归档入库</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">勘误批注与作者生卒年</div>
+            <form id="editNotesForm" onsubmit="saveNotesEdit(event)">
+                <input type="hidden" id="editBookId">
+                <input type="hidden" id="editAuthorNameHidden">
+                <div class="form-group">
+                    <label id="editModalBookTitle" style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 0.5rem;"></label>
+                </div>
+                <div class="form-row-2" style="background: #f6f8fa; padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>作者生年修改</label>
+                        <input type="text" id="editAuthorBirth" class="form-control">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>作者卒年修改</label>
+                        <input type="text" id="editAuthorDeath" class="form-control" placeholder="健在请留空">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>🌙 的批注手记</label>
+                    <textarea id="editNotesMoonText" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>🐟 的批注手记</label>
+                    <textarea id="editNotesFishText" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="modal-footer" style="justify-content: space-between; flex-direction: row; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-danger" onclick="deleteCurrentBook()">销毁此记录</button>
+                    <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: flex-end;" class="mobile-grid-fix">
+                        <button type="button" class="btn" onclick="closeModal('editModal')" style="width: auto;">取消</button>
+                        <button type="submit" class="btn btn-primary" style="width: auto;">保存修改</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================
+         * 1. 配置项与数据适配层 (Data Adapter)
+         * ========================================== */
+        const CONFIG = {
+            API_URL: 'https://sheetdb.io/api/v1/gmckvbct32rf5', 
+            USE_LOCAL_MOCK: false 
+        };
+
+        const DataAdapter = {
+            async fetchAll() {
+                if (CONFIG.USE_LOCAL_MOCK) {
+                    let localData = localStorage.getItem('mystery_books_shared_v4');
+                    if (localData === null) {
+                        localData = JSON.stringify([]);
+                        localStorage.setItem('mystery_books_shared_v4', localData);
+                    }
+                    return JSON.parse(localData);
+                } else {
+                    const response = await fetch(CONFIG.API_URL);
+                    return await response.json();
+                }
+            },
+
+            async create(record) {
+                if (CONFIG.USE_LOCAL_MOCK) {
+                    const data = await this.fetchAll();
+                    record.id = Date.now().toString(); 
+                    data.push(record);
+                    localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
+                    return record;
+                } else {
+                    record.id = Date.now().toString(); 
+                    const response = await fetch(CONFIG.API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ data: [record] })
+                    });
+                    return await response.json();
+                }
+            },
+
+            async update(id, updatedFields) {
+                if (CONFIG.USE_LOCAL_MOCK) {
+                    const data = await this.fetchAll();
+                    const index = data.findIndex(item => item.id === id);
+                    if (index !== -1) {
+                        data[index] = { ...data[index], ...updatedFields };
+                        localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
+                    }
+                    return data[index];
+                } else {
+                    const response = await fetch(`${CONFIG.API_URL}/id/${id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ data: updatedFields })
+                    });
+                    return await response.json();
+                }
+            },
+
+            async delete(id) {
+                if (CONFIG.USE_LOCAL_MOCK) {
+                    let data = await this.fetchAll();
+                    data = data.filter(item => item.id !== id);
+                    localStorage.setItem('mystery_books_shared_v4', JSON.stringify(data));
+                    return true;
+                } else {
+                    const response = await fetch(`${CONFIG.API_URL}/id/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    return await response.json();
+                }
+            },
+
+            // 批量更新同一作者的生卒年
+            async updateAuthorYears(authorName, birth, death) {
+                const booksToUpdate = state.books.filter(b => b.authorName === authorName);
+                for (let book of booksToUpdate) {
+                    await this.update(book.id, { authorBirth: birth, authorDeath: death });
+                }
+            }
+        };
+
+        /* ==========================================
+         * 2. 页面业务逻辑与渲染
+         * ========================================== */
+        let state = { books: [] };
+
+        document.addEventListener('DOMContentLoaded', refreshData);
+
+        async function refreshData() {
+            try {
+                showLoading(true);
+                state.books = await DataAdapter.fetchAll();
+                renderShelf();
+                populateAuthorSelect();
+            } catch (error) {
+                console.error("数据操作失败:", error);
+                document.getElementById('shelf').innerHTML = `<div class="loading" style="color:var(--accent-color)">数据加载失败，请刷新重试。</div>`;
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function renderShelf() {
+            const shelfEl = document.getElementById('shelf');
+            shelfEl.innerHTML = '';
+
+            if (!Array.isArray(state.books) || state.books.length === 0 || state.books[0].id === undefined) {
+                shelfEl.innerHTML = '<div class="loading">书架空空如也，等待着新的谜题...</div>';
+                return;
+            }
+
+            const groups = {};
+            state.books.forEach(book => {
+                const authorKey = book.authorName;
+                if (!groups[authorKey]) {
+                    groups[authorKey] = {
+                        name: book.authorName,
+                        birth: book.authorBirth || '',
+                        death: book.authorDeath || '',
+                        books: []
+                    };
+                }
+                groups[authorKey].books.push(book);
+            });
+
+            Object.values(groups).forEach(group => {
+                let yearsStr = '';
+                if (group.birth && group.death) {
+                    yearsStr = `(${group.birth}-${group.death})`;
+                } else if (group.birth) {
+                    yearsStr = `(${group.birth} ~ 至今)`;
+                }
+
+                const authorCard = document.createElement('div');
+                authorCard.className = 'author-card';
+
+                let booksHTML = '';
+                group.books.forEach(book => {
+                    // 读取两人的独立状态，兼容老数据（如果老数据为空，则默认显示想读）
+                    const statusMoon = book.statusMoon || '想读';
+                    const statusFish = book.statusFish || '想读';
+
+                    const tagMoonClass = statusMoon === '已读' ? 'tag-read' : 'tag-want';
+                    const tagFishClass = statusFish === '已读' ? 'tag-read' : 'tag-want';
+
+                    const nextMoonStatus = statusMoon === '已读' ? '想读' : '已读';
+                    const nextFishStatus = statusFish === '已读' ? '想读' : '已读';
+                    
+                    const moonNotesRender = book.notesMoon ? escapeHtml(book.notesMoon) : '<span class="notes-empty">期待手记录入...</span>';
+                    const fishNotesRender = book.notesFish ? escapeHtml(book.notesFish) : '<span class="notes-empty">期待手记录入...</span>';
+
+                    booksHTML += `
+                        <div class="book-item">
+                            <div class="book-info">
+                                <div class="book-title-row">
+                                    <span class="book-title">《${escapeHtml(book.bookTitle)}》</span>
+                                    <div class="tags-wrapper">
+                                        <span class="tag ${tagMoonClass}">🌙 ${statusMoon}</span>
+                                        <span class="tag ${tagFishClass}">🐟 ${statusFish}</span>
+                                    </div>
+                                </div>
+                                <div class="notes-container">
+                                    <div class="book-notes">
+                                        <div class="notes-profile">
+                                            <span class="notes-emoji" onclick="fastToggleStatus('${book.id}', 'Moon', '${nextMoonStatus}')" title="点击快速切换状态">🌙</span>
+                                        </div>
+                                        <span class="notes-text">${moonNotesRender}</span>
+                                    </div>
+                                    <div class="book-notes">
+                                        <div class="notes-profile">
+                                            <span class="notes-emoji" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextFishStatus}')" title="点击快速切换状态">🐟</span>
+                                        </div>
+                                        <span class="notes-text">${fishNotesRender}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="book-actions">
+                                <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Moon', '${nextMoonStatus}')">🌙→${nextMoonStatus}</button>
+                                <button class="btn btn-sm" onclick="fastToggleStatus('${book.id}', 'Fish', '${nextFishStatus}')">🐟→${nextFishStatus}</button>
+                                <button class="btn btn-sm btn-primary" onclick="openEditModal('${book.id}', '${escapeJs(book.bookTitle)}', '${escapeJs(book.notesMoon || '')}', '${escapeJs(book.notesFish || '')}', '${escapeJs(group.name)}', '${escapeJs(group.birth)}', '${escapeJs(group.death)}')">
+                                    勘误批注
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                authorCard.innerHTML = `
+                    <h3 class="author-header">
+                        <span>${escapeHtml(group.name)}</span>
+                        <span class="author-years">${yearsStr}</span>
+                    </h3>
+                    <div class="book-list">
+                        ${booksHTML}
+                    </div>
+                `;
+                shelfEl.appendChild(authorCard);
+            });
+        }
+
+        function populateAuthorSelect() {
+            const select = document.getElementById('bookAuthorSelect');
+            select.innerHTML = '';
+            
+            const authors = [];
+            const seen = new Set();
+            if(Array.isArray(state.books)) {
+                state.books.forEach(b => {
+                    if (b.authorName && !seen.has(b.authorName)) {
+                        seen.add(b.authorName);
+                        authors.push({ name: b.authorName, birth: b.authorBirth, death: b.authorDeath });
+                    }
+                });
+            }
+
+            if(authors.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.textContent = "暂无已有作者，请选择新作者";
+                select.appendChild(opt);
+                document.getElementById('authorType').value = 'new';
+                toggleAuthorInput();
+                return;
+            }
+
+            authors.forEach(auth => {
+                const opt = document.createElement('option');
+                opt.value = auth.name;
+                opt.textContent = auth.name;
+                opt.dataset.birth = auth.birth || '';
+                opt.dataset.death = auth.death || '';
+                select.appendChild(opt);
+            });
+        }
+
+        /* ==========================================
+         * 3. 交互行为
+         * ========================================== */
+        async function fastToggleStatus(id, person, nextStatus) {
+            try {
+                showLoading(true);
+                const updateField = person === 'Moon' ? { statusMoon: nextStatus } : { statusFish: nextStatus };
+                await DataAdapter.update(id, updateField);
+                await refreshData();
+            } catch (e) {
+                alert("变更状态失败。");
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function saveNotesEdit(event) {
+            event.preventDefault();
+            const id = document.getElementById('editBookId').value;
+            const authorName = document.getElementById('editAuthorNameHidden').value;
+            const birth = document.getElementById('editAuthorBirth').value.trim();
+            const death = document.getElementById('editAuthorDeath').value.trim();
+            const notesMoon = document.getElementById('editNotesMoonText').value;
+            const notesFish = document.getElementById('editNotesFishText').value;
+
+            try {
+                closeModal('editModal');
+                showLoading(true);
+                // 1. 更新书本批注
+                await DataAdapter.update(id, { notesMoon, notesFish });
+                // 2. 同步更新该作者所有书的生卒年
+                await DataAdapter.updateAuthorYears(authorName, birth, death);
+                await refreshData();
+            } catch (e) {
+                alert("保存失败。");
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function saveNewBook(event) {
+            event.preventDefault();
+            
+            const authorType = document.getElementById('authorType').value;
+            let authorName, authorBirth, authorDeath;
+
+            if (authorType === 'existing') {
+                const select = document.getElementById('bookAuthorSelect');
+                if(!select.value) { alert('请先选择或创建一位作者。'); return; }
+                authorName = select.value;
+                const selectedOpt = select.options[select.selectedIndex];
+                authorBirth = selectedOpt.dataset.birth;
+                authorDeath = selectedOpt.dataset.death;
+            } else {
+                authorName = document.getElementById('newAuthorName').value.trim();
+                authorBirth = document.getElementById('newAuthorBirth').value.trim();
+                authorDeath = document.getElementById('newAuthorDeath').value.trim();
+                if (!authorName) { alert('请输入作者姓名。'); return; }
+            }
+
+            const bookTitle = document.getElementById('bookTitle').value.trim();
+
+            // 【核心功能：查重机制】
+            const isDuplicate = state.books.some(b => 
+                b.authorName.toLowerCase() === authorName.toLowerCase() && 
+                b.bookTitle.toLowerCase() === bookTitle.toLowerCase()
+            );
+            if (isDuplicate) {
+                alert(`档案查重提示：\n该作者旗下已存在《${bookTitle}》的记录，请勿重复录入！`);
+                return;
+            }
+
+            const newBook = {
+                authorName,
+                authorBirth,
+                authorDeath,
+                bookTitle,
+                statusMoon: document.getElementById('bookStatusMoon').value,
+                statusFish: document.getElementById('bookStatusFish').value,
+                notesMoon: document.getElementById('bookNotesMoon').value.trim(),
+                notesFish: document.getElementById('bookNotesFish').value.trim()
+            };
+
+            try {
+                closeModal('addModal');
+                showLoading(true);
+                await DataAdapter.create(newBook);
+                document.getElementById('addBookForm').reset();
+                toggleAuthorInput(); 
+                await refreshData();
+            } catch (e) {
+                alert("新书录入失败。");
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 【核心功能：删除记录】
+        async function deleteCurrentBook() {
+            const id = document.getElementById('editBookId').value;
+            const title = document.getElementById('editModalBookTitle').textContent;
+            
+            if (confirm(`🚨 探长决断确认：\n你确定要彻底销毁 ${title} 的全部档案记录吗？此操作无法撤销。`)) {
+                try {
+                    closeModal('editModal');
+                    showLoading(true);
+                    await DataAdapter.delete(id);
+                    await refreshData();
+                } catch (e) {
+                    alert("档案销毁失败。");
+                } finally {
+                    showLoading(false);
+                }
+            }
+        }
+
+        /* ==========================================
+         * 4. 辅助工具
+         * ========================================== */
+        function openAddModal() { 
+            document.getElementById('addModal').classList.add('active'); 
+        }
+        function closeModal(modalId) { 
+            document.getElementById(modalId).classList.remove('active'); 
+        }
+
+        function openEditModal(id, title, notesMoon, notesFish, authorName, birth, death) {
+            document.getElementById('editBookId').value = id;
+            document.getElementById('editAuthorNameHidden').value = authorName;
+            document.getElementById('editModalBookTitle').textContent = `《${title}》`;
+            document.getElementById('editAuthorBirth').value = birth === '?' ? '' : birth;
+            document.getElementById('editAuthorDeath').value = death;
+            document.getElementById('editNotesMoonText').value = notesMoon;
+            document.getElementById('editNotesFishText').value = notesFish;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function toggleAuthorInput() {
+            const type = document.getElementById('authorType').value;
+            document.getElementById('existingAuthorGroup').style.display = type === 'existing' ? 'block' : 'none';
+            document.getElementById('newAuthorGroup').style.display = type === 'new' ? 'block' : 'none';
+        }
+
+        function showLoading(show) {
+            const shelfEl = document.getElementById('shelf');
+            if(show) {
+                shelfEl.style.opacity = '0.4';
+                shelfEl.style.pointerEvents = 'none';
+            } else {
+                shelfEl.style.opacity = '1';
+                shelfEl.style.pointerEvents = 'auto';
+            }
+        }
+
+        function escapeHtml(str) {
+            if(!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+        function escapeJs(str) {
+            if(!str) return '';
+            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+    </script>
+</body>
+</html>
